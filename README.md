@@ -22,7 +22,6 @@ Kairo is a production-ready, open-source multilingual AI assistant platform powe
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/yourusername/kairo.git
-   cd kairo
    ```
 
 2. **Install dependencies:**
