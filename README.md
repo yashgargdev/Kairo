@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kairo
 
-## Getting Started
+**Evolving Intelligence.**
 
-First, run the development server:
+Kairo is a production-ready, open-source multilingual AI assistant platform powered by the Sarvam-M API. Built for real-world interactions, Kairo features conversation memory, multi-mode AI personas, Hinglish native understanding, and foundational RAG architecture. It serves as a robust base for building modern, premium AI SaaS applications.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Key Features
+- **Premium Dark Aesthetics**: A stunning minimal interface with subtle saffron to warm gold accents.
+- **Multilingual Support**: Built-in normalization for mixed Hindi-English (Hinglish) queries.
+- **Multi-Mode Prompting**: Contextual personas (Study, Coding, ELI5, MCQ).
+- **RAG Ready**: Architecture supporting document extraction and vector search via Supabase limit tracking.
+- **Markdown & Code**: Full rendering of complex AI replies including code blocks with syntax highlighting.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
+- Next.js 15 (App Router)
+- React, Tailwind CSS V4, Framer Motion
+- Supabase (Auth + PostgreSQL)
+- Sarvam-M API (Streaming)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick Start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/kairo.git
+   cd kairo
+   ```
 
-## Learn More
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. **Configure Environment Variables:**
+   Rename `.env.example` to `.env.local` and apply your database credentials:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   SARVAM_API_KEY=your_sarvam_api_key
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+Provided under the [MIT License](LICENSE).

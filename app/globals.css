@@ -1,26 +1,161 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-primary: #d4af37;
+  --color-primary-dark: #b08d26;
+  --color-primary-light: #ebd478;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-background-dark: #050505;
+  --color-surface-dark: #121212;
+  --color-surface-ai: #1E1E26;
+  --color-surface-glass: rgba(18, 18, 18, 0.7);
+  --color-code-bg: #0a0a0a;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "Fira Code", monospace, ui-monospace, "SFMono-Regular";
+
+  --shadow-glow-gold: 0 0 25px rgba(212, 175, 55, 0.15);
+  --shadow-glow-gold-subtle: 0 0 15px rgba(212, 175, 55, 0.05);
+  --shadow-glow-gold-focus: 0 0 35px rgba(212, 175, 55, 0.25);
+
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fadeIn 0.5s ease-out forwards;
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
+:root {
+  --background: #050505;
+  --foreground: #e2e8f0;
+}
+
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(212, 175, 55, 0.3);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: rgba(212, 175, 55, 0.3);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333;
+}
+
+.glass-panel {
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.glass-header {
+  background: rgba(5, 5, 5, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.floating-input-container {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  /* Inner border logic */
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.floating-input-container:focus-within {
+  border-color: rgba(212, 175, 55, 0.3);
+  background: rgba(25, 25, 29, 0.8);
+  box-shadow: var(--shadow-glow-gold), 0 10px 40px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.corner-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+}
+
+.glow-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+}
+
+.active-sidebar-item {
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.08), transparent);
+  border-left: 2px solid var(--color-primary);
+  box-shadow: inset 0 0 15px rgba(212, 175, 55, 0.05);
+}
+
+.ai-response-card {
+  background-color: var(--color-surface-ai);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.03), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.code-block {
+  background-color: #080808;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.send-btn-glow:hover {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+.bg-gradient-gold {
+  background-image: linear-gradient(135deg, #d4af37 0%, #b48a20 100%);
+}
+
+.bg-subtle-radial {
+  background-image: radial-gradient(circle at top right, rgba(212, 175, 55, 0.08), transparent 40%);
+}
+
+/* Override browser autofill styling for dark mode */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #121212 inset !important;
+  -webkit-text-fill-color: white !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
