@@ -170,6 +170,43 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         });
     }, [messages]);
 
+    const groupedMessageElements = useMemo(() => {
+        const allMessages = [...messages, ...archivedVersions].sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0).getTime();
+            const dateB = new Date(b.createdAt || 0).getTime();
+            return dateA - dateB;
+        });
+
+        const groupedMessages: any[] = [];
+        allMessages.forEach((m) => {
+            const prev = groupedMessages[groupedMessages.length - 1];
+            if (prev && prev.role === 'assistant' && m.role === 'assistant') {
+                if (!prev.versions) prev.versions = [{ ...prev }];
+                prev.versions.push({ ...m });
+                prev.content = m.content;
+                prev.parts = m.parts;
+            } else {
+                groupedMessages.push({ ...m });
+            }
+        });
+
+        return groupedMessages.map((m: any, index: number) => {
+            const isLastAssistant = m.role === 'assistant' &&
+                index === groupedMessages.map((msg: any) => msg.role).lastIndexOf('assistant');
+
+            return (
+                <MessageBubble
+                    key={m.id}
+                    role={m.role as 'user' | 'assistant'}
+                    content={m.content}
+                    parts={m.parts}
+                    versions={m.versions}
+                    onRegenerate={isLastAssistant ? handleRegenerate : undefined}
+                />
+            );
+        });
+    }, [messages, archivedVersions, handleRegenerate]);
+
     if (isLoadingHistory) {
         return (
             <div className="flex-1 flex items-center justify-center">
@@ -202,43 +239,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                         </div>
                     )}
 
-                    {useMemo(() => {
-                        const allMessages = [...messages, ...archivedVersions].sort((a, b) => {
-                            const dateA = new Date(a.createdAt || 0).getTime();
-                            const dateB = new Date(b.createdAt || 0).getTime();
-                            return dateA - dateB;
-                        });
-
-                        const groupedMessages: any[] = [];
-                        allMessages.forEach((m) => {
-                            const prev = groupedMessages[groupedMessages.length - 1];
-                            if (prev && prev.role === 'assistant' && m.role === 'assistant') {
-                                if (!prev.versions) prev.versions = [{ ...prev }];
-                                prev.versions.push({ ...m });
-                                prev.content = m.content;
-                                prev.parts = m.parts;
-                            } else {
-                                groupedMessages.push({ ...m });
-                            }
-                        });
-
-                        return groupedMessages.map((m: any, index: number) => {
-                            const isLastAssistant = m.role === 'assistant' &&
-                                index === groupedMessages.map((msg: any) => msg.role).lastIndexOf('assistant');
-
-                            return (
-                                <MessageBubble
-                                    key={m.id}
-                                    role={m.role as 'user' | 'assistant'}
-                                    content={m.content}
-                                    parts={m.parts}
-                                    versions={m.versions}
-                                    onRegenerate={isLastAssistant ? handleRegenerate : undefined}
-                                />
-                            );
-                        });
-                        // eslint-disable-next-line react-hooks/exhaustive-deps
-                    }, [messages, archivedVersions, handleRegenerate])}
+                    {groupedMessageElements}
 
                     {isLoading && messages[messages.length - 1]?.role === 'user' && (
                         <div className="flex justify-start w-full animate-fade-in">
