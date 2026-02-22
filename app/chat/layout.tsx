@@ -9,11 +9,13 @@ export default async function ChatLayout({ children }: { children: React.ReactNo
 
     return (
         <UIProvider>
-            <Sidebar user={user} />
-            <main className="flex-1 flex flex-col relative h-full z-10 w-full overflow-hidden">
-                <Header />
-                {children}
-            </main>
+            <div className="flex h-screen w-full overflow-hidden">
+                <Sidebar user={user} />
+                <main className="flex-1 flex flex-col relative h-full z-10 w-full overflow-hidden">
+                    <Header />
+                    {children}
+                </main>
+            </div>
         </UIProvider>
     );
 }

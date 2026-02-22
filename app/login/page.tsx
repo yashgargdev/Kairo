@@ -1,9 +1,17 @@
 import { LoginForm } from './LoginForm'
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 
 export default async function LoginPage(
     props: { searchParams: Promise<{ error: string }> }
 ) {
+    const supabase = await createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+        redirect('/chat');
+    }
     const searchParams = await props.searchParams;
     return (
         <div className="w-full min-h-screen flex flex-col md:flex-row overflow-hidden bg-[#050505]">
@@ -42,7 +50,7 @@ export default async function LoginPage(
                 </div>
 
                 {/* Form Container */}
-                <div className="flex-1 flex flex-col justify-center px-8 md:px-0 py-12 relative z-10">
+                <div className="flex-1 flex flex-col justify-center px-8 md:px-0 pb-8 pt-4 relative z-10">
                     <LoginForm error={searchParams?.error} />
                 </div>
             </div>

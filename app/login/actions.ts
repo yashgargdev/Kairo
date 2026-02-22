@@ -12,31 +12,44 @@ export async function continueWithEmail(formData: FormData) {
         password: formData.get('password') as string,
     }
 
-    // 1. Attempt login first
+    // Step 1: Try signing in
     const { error: signInError } = await supabase.auth.signInWithPassword(data)
 
-    if (signInError) {
-        // 2. If login fails with invalid credentials, it might be a new user. Try signup.
-        const isCredentialError = signInError.message.toLowerCase().includes('credential') || signInError.message.toLowerCase().includes('invalid');
-
-        if (isCredentialError) {
-            const { error: signUpError } = await supabase.auth.signUp(data)
-
-            if (signUpError) {
-                // If the user already exists, then the password was just wrong
-                if (signUpError.message.toLowerCase().includes('already registered')) {
-                    redirect('/login?error=Incorrect password for existing account.')
-                } else {
-                    redirect(`/login?error=${encodeURIComponent(signUpError.message)}`)
-                }
-            }
-            // Success: new account created
-        } else {
-            redirect(`/login?error=${encodeURIComponent(signInError.message)}`)
-        }
+    if (!signInError) {
+        // ✅ Existing user, correct password — logged in
+        revalidatePath('/', 'layout')
+        redirect('/chat')
     }
 
-    // Success: logged in
+    // Step 2: Sign-in failed. Only proceed to sign-up check for credential errors.
+    const isCredentialError =
+        signInError.message.toLowerCase().includes('invalid') ||
+        signInError.message.toLowerCase().includes('credential')
+
+    if (!isCredentialError) {
+        // Other error (e.g. email not confirmed, rate limit) — show as-is
+        redirect(`/login?error=${encodeURIComponent(signInError.message)}`)
+    }
+
+    // Step 3: Attempt sign-up to determine if the email is new or existing.
+    // Supabase returns `identities: []` for an already-registered email (security-safe behaviour).
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(data)
+
+    if (signUpError) {
+        redirect(`/login?error=${encodeURIComponent(signUpError.message)}`)
+    }
+
+    // Step 4: identities[] is empty → email already registered → wrong password
+    if (signUpData.user?.identities?.length === 0) {
+        redirect('/login?error=Incorrect password. Please try again.')
+    }
+
+    // Step 5: New user created. If session is null, email confirmation is required.
+    if (!signUpData.session) {
+        redirect('/login?error=Account created! Please check your email to confirm your account before logging in.')
+    }
+
+    // ✅ New account created + auto-confirmed (confirmation disabled in Supabase)
     revalidatePath('/', 'layout')
     redirect('/chat')
 }

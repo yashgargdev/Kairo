@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Kairo AI — Evolving Intelligence',
@@ -15,7 +17,13 @@ const features = [
   { icon: 'public', label: 'Open Source', desc: 'Fully open-source on GitHub — self-host or contribute freely' },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (session) {
+    redirect('/chat');
+  }
   return (
     <div className="bg-gradient-to-b from-[#0d0d10] to-[#050505] text-slate-200">
 

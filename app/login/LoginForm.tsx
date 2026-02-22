@@ -41,6 +41,7 @@ function ContinueButton() {
 export function LoginForm({ error }: { error?: string }) {
     const [email, setEmail] = useState('');
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleGoogleSignIn = async () => {
         setIsGoogleLoading(true);
@@ -55,12 +56,12 @@ export function LoginForm({ error }: { error?: string }) {
 
     return (
         <div className="flex flex-col w-full max-w-sm mx-auto">
-            <h2 className="text-[28px] md:text-[32px] font-serif font-medium text-white mb-8 tracking-tight">
+            <h2 className="text-[26px] md:text-[30px] font-serif font-medium text-white mb-5 tracking-tight">
                 Login to your account
             </h2>
 
             {/* Social Buttons */}
-            <div className="flex gap-3 mb-8">
+            <div className="flex gap-3 mb-5">
                 <button
                     type="button"
                     onClick={handleGoogleSignIn}
@@ -86,20 +87,20 @@ export function LoginForm({ error }: { error?: string }) {
                 </button>
             </div>
 
-            <div className="relative flex items-center py-2 mb-6">
+            <div className="relative flex items-center py-1 mb-4">
                 <div className="flex-grow border-t border-white/5"></div>
                 <span className="flex-shrink-0 mx-4 text-slate-500 text-[11px] font-medium tracking-widest uppercase">OR</span>
                 <div className="flex-grow border-t border-white/5"></div>
             </div>
 
-            <form className="flex flex-col gap-5">
+            <form className="flex flex-col gap-4">
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center border border-white/10 rounded-2xl overflow-hidden focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all bg-white/[0.02]">
-                        <div className="flex items-center px-4 py-3.5 bg-white/[0.03] border-r border-white/5">
+                        <div className="flex items-center px-4 py-3 bg-white/[0.03] border-r border-white/5">
                             <span className="material-symbols-outlined text-[18px] text-slate-500">mail</span>
                         </div>
                         <input
-                            className="w-full bg-transparent text-white px-4 py-3.5 focus:outline-none text-[15px] placeholder-slate-500 font-light"
+                            className="w-full bg-transparent text-white px-4 py-3 focus:outline-none text-[15px] placeholder-slate-500 font-light"
                             id="email"
                             name="email"
                             type="email"
@@ -111,33 +112,43 @@ export function LoginForm({ error }: { error?: string }) {
                     </div>
 
                     <div className="flex items-center border border-white/10 rounded-2xl overflow-hidden focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 transition-all bg-white/[0.02]">
-                        <div className="flex items-center px-4 py-3.5 bg-white/[0.03] border-r border-white/5">
+                        <div className="flex items-center px-4 py-3 bg-white/[0.03] border-r border-white/5">
                             <span className="material-symbols-outlined text-[18px] text-slate-500">lock</span>
                         </div>
-                        <input
-                            className="w-full bg-transparent text-white px-4 py-3.5 focus:outline-none text-[15px] placeholder-slate-500 font-light"
-                            id="password"
-                            name="password"
-                            type="password"
-                            placeholder="Password"
-                            required
-                        />
+                        <div className="w-full flex items-center relative">
+                            <input
+                                className="w-full bg-transparent text-white pl-4 pr-12 py-3 focus:outline-none text-[15px] placeholder-slate-500 font-light"
+                                id="password"
+                                name="password"
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Password"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none flex items-center justify-center h-full"
+                                tabIndex={-1}
+                            >
+                                <span className="material-symbols-outlined text-[18px]">
+                                    {showPassword ? "visibility_off" : "visibility"}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {error && (
-                    <p className="p-3 bg-red-500/10 text-red-400 rounded-xl text-xs font-medium text-center border border-red-500/10">
+                    <p className={`p-3 rounded-xl text-xs font-medium text-center border ${error.startsWith('Account created!')
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : 'bg-red-500/10 text-red-400 border-red-500/10'
+                        }`}>
                         {error}
                     </p>
                 )}
 
                 <ContinueButton />
             </form>
-
-            <div className="flex items-center justify-center gap-6 mt-32">
-                <Link href="/privacy" className="text-[11px] text-slate-600 font-medium hover:text-slate-400 transition-colors">Privacy policy</Link>
-                <Link href="/terms" className="text-[11px] text-slate-600 font-medium hover:text-slate-400 transition-colors">Terms of service</Link>
-            </div>
         </div>
     );
 }
