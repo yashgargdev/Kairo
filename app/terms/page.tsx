@@ -7,11 +7,11 @@ export const metadata = {
 
 export default function TermsPage() {
     return (
-        <div className="min-h-screen bg-background text-foreground">
+        <div className="w-full h-full overflow-y-auto relative z-10">
             {/* Header */}
             <header className="border-b border-white/5 px-6 py-4 flex items-center justify-between">
                 <Link href="/chat" className="flex items-center gap-2 group">
-                    <span className="text-primary font-serif italic text-xl font-bold">K</span>
+                    <img src="/Kairo-Logo-White.png" alt="Kairo Logo" className="size-6 object-contain" />
                     <span className="text-white font-medium text-sm tracking-wide">kairo</span>
                 </Link>
                 <Link href="/chat" className="text-xs text-slate-500 hover:text-white transition-colors">

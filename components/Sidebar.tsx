@@ -2,15 +2,46 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { SettingsModal } from './Modals/SettingsModal';
-import { ProfileModal } from './Modals/ProfileModal';
-import { PersonalizationModal } from './Modals/PersonalizationModal';
+import { useFormStatus } from 'react-dom';
+import dynamic from 'next/dynamic';
 import { logout } from '@/app/login/actions';
 import { getChats, deleteChat } from '@/app/chat/actions';
 import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
 import { useUI } from './Providers/UIProvider';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Lazy-load heavy modals — none are visible on initial render
+const SettingsModal = dynamic(() => import('./Modals/SettingsModal').then(m => ({ default: m.SettingsModal })), { ssr: false });
+const ProfileModal = dynamic(() => import('./Modals/ProfileModal').then(m => ({ default: m.ProfileModal })), { ssr: false });
+const PersonalizationModal = dynamic(() => import('./Modals/PersonalizationModal').then(m => ({ default: m.PersonalizationModal })), { ssr: false });
+
+
+function LogoutButton() {
+    const { pending } = useFormStatus();
+    return (
+        <button
+            type="submit"
+            disabled={pending}
+            className="w-full flex items-center gap-3 p-2 px-3 text-[13px] font-medium text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors text-left group disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+            {pending ? (
+                <>
+                    <svg className="animate-spin w-[18px] h-[18px] text-red-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    <span className="text-red-400">Logging out...</span>
+                </>
+            ) : (
+                <>
+                    <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-red-400 transition-colors">logout</span>
+                    Log out
+                </>
+            )}
+        </button>
+    );
+}
 
 export default function Sidebar({ user }: { user?: User | null }) {
     const pathname = usePathname();
@@ -207,24 +238,23 @@ export default function Sidebar({ user }: { user?: User | null }) {
                         <div className="flex flex-col px-1">
                             {/* Logout Button form action */}
                             <form action={logout} className="w-full">
-                                <button type="submit" className="w-full flex items-center gap-3 p-2 px-3 text-[13px] font-medium text-slate-300 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors text-left group">
-                                    <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-red-400 transition-colors">logout</span>
-                                    Log out
-                                </button>
+                                <LogoutButton />
                             </form>
                         </div>
                     </div>
                 )}
 
-                <button onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)} className="flex items-center gap-3 w-full p-2 py-2.5 rounded-xl hover:bg-white/5 transition-colors text-left group relative">
-                    <div className="size-8 rounded-full bg-surface-dark border border-white/10 flex items-center justify-center text-slate-300 font-serif font-medium text-xs ring-1 ring-transparent group-hover:ring-primary/40 transition-all">
+                <button onClick={() => userEmail && setIsProfileMenuOpen(!isProfileMenuOpen)} className={`flex items-center gap-3 w-full p-2 py-2.5 rounded-xl text-left group relative transition-colors ${userEmail ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'}`}>
+                    <div className={`size-8 rounded-full bg-surface-dark border border-white/10 flex items-center justify-center text-slate-300 font-serif font-medium text-xs ring-1 ring-transparent transition-all ${userEmail ? 'group-hover:ring-primary/40' : ''}`}>
                         {initial}
                     </div>
                     <div className="flex-1 min-w-0 pr-4">
                         <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                        <p className="text-[10px] text-primary/70 truncate uppercase tracking-wide mt-0.5 font-semibold">Pro Member</p>
+                        <p className="text-[10px] text-primary/70 truncate uppercase tracking-wide mt-0.5 font-semibold">{userEmail ? 'Member' : ''}</p>
                     </div>
-                    <span className={`material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-90 text-primary' : 'group-hover:text-slate-300'}`}>settings</span>
+                    {userEmail && (
+                        <span className={`material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-90 text-primary' : 'group-hover:text-slate-300'}`}>settings</span>
+                    )}
                 </button>
             </div>
         </>

@@ -1,6 +1,6 @@
 {
   "name": "kairo",
-  "version": "0.1.0",
+  "version": "1.0.0-beta",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -20,13 +20,15 @@
     "lucide-react": "^0.575.0",
     "mammoth": "^1.11.0",
     "next": "16.1.6",
+    "next-nprogress-bar": "^2.4.7",
     "pdf-parse": "^2.4.5",
     "pdf2json": "^4.0.2",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
-    "react-syntax-highlighter": "^16.1.0"
+    "react-syntax-highlighter": "^16.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
