@@ -50,7 +50,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 
 ```bash
 # 1. Fork and clone
-git clone https://github.com/YOUR_USERNAME/kairo.git
+git clone https://github.com/yashgargdev/kairo.git
 cd kairo
 
 # 2. Install dependencies
