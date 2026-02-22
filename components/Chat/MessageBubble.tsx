@@ -3,9 +3,9 @@
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 
-export function MessageBubble({ role, content, parts, versions, onRegenerate }: {
+export const MessageBubble = memo(function MessageBubble({ role, content, parts, versions, onRegenerate }: {
     role: 'user' | 'assistant',
     content?: string,
     parts?: Array<{ type: string, text?: string }>,
@@ -132,9 +132,10 @@ export function MessageBubble({ role, content, parts, versions, onRegenerate }: 
             </div>
         </div>
     );
-}
+});
 
-function CodeBlock({ language, value }: { language: string, value: string }) {
+/** Memoized syntax-highlighted code block — only re-renders when language/value change */
+const CodeBlock = memo(function CodeBlock({ language, value }: { language: string; value: string }) {
     const [copied, setCopied] = useState(false);
 
     const copyToClipboard = () => {
@@ -173,4 +174,4 @@ function CodeBlock({ language, value }: { language: string, value: string }) {
             </div>
         </div>
     );
-}
+});

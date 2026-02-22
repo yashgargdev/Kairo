@@ -4,7 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { MessageBubble } from '@/components/Chat/MessageBubble';
 import InputBar from '@/components/Chat/InputBar';
-import { useEffect, useRef, useState, use } from 'react';
+import { useEffect, useRef, useState, use, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getChatMessages } from '../actions';
@@ -147,7 +147,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         setInput('');
     };
 
-    const handleRegenerate = () => {
+    const handleRegenerate = useCallback(() => {
         const lastAssistantMsg = messages.slice().reverse().find(m => m.role === 'assistant');
         if (lastAssistantMsg) {
             setArchivedVersions(prev => [...prev, lastAssistantMsg]);
@@ -156,11 +156,18 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             // @ts-ignore
             body: { mode, chatId: activeChatId, isRegenerate: true }
         });
-    };
+    }, [messages, mode, activeChatId, regenerate]);
 
-    // Auto-scroll to bottom of chat
+    // Auto-scroll: use instant for streaming updates to avoid janky behaviour
+    const isStreamingRef = useRef(false);
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        isStreamingRef.current = isLoading;
+    }, [isLoading]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({
+            behavior: isStreamingRef.current ? 'instant' : 'smooth',
+        });
     }, [messages]);
 
     if (isLoadingHistory) {
@@ -195,7 +202,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                         </div>
                     )}
 
-                    {(() => {
+                    {useMemo(() => {
                         const allMessages = [...messages, ...archivedVersions].sort((a, b) => {
                             const dateA = new Date(a.createdAt || 0).getTime();
                             const dateB = new Date(b.createdAt || 0).getTime();
@@ -208,7 +215,6 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                             if (prev && prev.role === 'assistant' && m.role === 'assistant') {
                                 if (!prev.versions) prev.versions = [{ ...prev }];
                                 prev.versions.push({ ...m });
-                                // Keep the top level content updated to the latest version for convenience
                                 prev.content = m.content;
                                 prev.parts = m.parts;
                             } else {
@@ -217,7 +223,6 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                         });
 
                         return groupedMessages.map((m: any, index: number) => {
-                            // Find if this is the last assistant message
                             const isLastAssistant = m.role === 'assistant' &&
                                 index === groupedMessages.map((msg: any) => msg.role).lastIndexOf('assistant');
 
@@ -232,7 +237,8 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                                 />
                             );
                         });
-                    })()}
+                        // eslint-disable-next-line react-hooks/exhaustive-deps
+                    }, [messages, archivedVersions, handleRegenerate])}
 
                     {isLoading && messages[messages.length - 1]?.role === 'user' && (
                         <div className="flex justify-start w-full animate-fade-in">
