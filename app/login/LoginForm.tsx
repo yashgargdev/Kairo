@@ -57,7 +57,7 @@ export function LoginForm({ error }: { error?: string }) {
     return (
         <div className="flex flex-col w-full max-w-sm mx-auto">
             <h2 className="text-[26px] md:text-[30px] font-serif font-medium text-white mb-5 tracking-tight">
-                Login to your account
+                Welcome to Kairo
             </h2>
 
             {/* Social Buttons */}
@@ -136,6 +136,12 @@ export function LoginForm({ error }: { error?: string }) {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <div className="flex justify-end mt-[-4px]">
+                    <Link href="/forgot-password" className="text-[12px] text-slate-500 hover:text-white transition-colors">
+                        Forgot password?
+                    </Link>
                 </div>
 
                 {error && (

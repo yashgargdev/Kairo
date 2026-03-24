@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { logout } from '@/app/login/actions';
 import { getChats, deleteChat } from '@/app/chat/actions';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { User } from '@supabase/supabase-js';
 import { useUI } from './Providers/UIProvider';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const SettingsModal = dynamic(() => import('./Modals/SettingsModal').then(m => ({ default: m.SettingsModal })), { ssr: false });
 const ProfileModal = dynamic(() => import('./Modals/ProfileModal').then(m => ({ default: m.ProfileModal })), { ssr: false });
 const PersonalizationModal = dynamic(() => import('./Modals/PersonalizationModal').then(m => ({ default: m.PersonalizationModal })), { ssr: false });
+const APIKeysModal = dynamic(() => import('./Modals/APIKeysModal').then(m => ({ default: m.APIKeysModal })), { ssr: false });
 
 
 function LogoutButton() {
@@ -50,16 +52,33 @@ export default function Sidebar({ user }: { user?: User | null }) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [isPersonalizationModalOpen, setIsPersonalizationModalOpen] = useState(false);
+    const [isAPIKeysModalOpen, setIsAPIKeysModalOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [chats, setChats] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
     const profileMenuRef = useRef<HTMLDivElement>(null);
 
+    // API key connection status
+    const [connectedKeys, setConnectedKeys] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        const checkKeys = () => {
+            setConnectedKeys({
+                openai: !!localStorage.getItem('kairo_api_key_openai'),
+                anthropic: !!localStorage.getItem('kairo_api_key_anthropic'),
+                gemini: !!localStorage.getItem('kairo_api_key_gemini'),
+                sarvam: !!localStorage.getItem('kairo_api_key_sarvam'),
+            });
+        };
+        checkKeys();
+        window.addEventListener('storage', checkKeys);
+        return () => window.removeEventListener('storage', checkKeys);
+    }, []);
+
     useEffect(() => {
         const fetchChats = async () => {
             try {
-                // Use direct API call with no-cache to guarantee fresh data
                 const res = await fetch('/api/chats', { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
@@ -71,7 +90,6 @@ export default function Sidebar({ user }: { user?: User | null }) {
         };
         if (user) fetchChats();
 
-        // Listen for new chat creations or updates to refresh the sidebar
         const handleChatUpdate = () => {
             if (user) fetchChats();
         };
@@ -130,89 +148,128 @@ export default function Sidebar({ user }: { user?: User | null }) {
     const initial = name ? name.charAt(0).toUpperCase() : (userEmail ? userEmail.charAt(0).toUpperCase() : 'U');
     const displayName = name || (userEmail ? userEmail.split('@')[0] : 'Guest');
 
+    const connectedCount = Object.values(connectedKeys).filter(Boolean).length;
+
     const sidebarContent = (
         <>
-            <div className="p-8 pb-4">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-3">
-                        <div className="relative flex items-center justify-center size-10">
-                            <img src="/Kairo-Logo-White.png" alt="Kairo Logo" className="w-full h-full object-contain drop-shadow-[0_0_10px_rgba(212,175,55,0.2)]" />
-                        </div>
+            <div className="p-4 md:p-6 pb-2">
+                <div className="flex items-center justify-between mb-4">
+                    <Link href="/" className="flex items-center gap-2.5">
+                        <Image src="/Kairo-Logo-White.png" alt="Kairo" width={32} height={32} className="object-contain" />
                         <div className="flex flex-col">
-                            <h1 className="text-white text-xl font-serif font-semibold leading-none tracking-wide">Kairo</h1>
-                            <p className="text-primary/80 text-[10px] font-medium tracking-widest uppercase mt-1">Evolving Intelligence</p>
+                            <h1 className="text-white text-lg font-semibold tracking-wide leading-tight">Kairo</h1>
+                            <span className="text-slate-500 text-[9px] font-medium tracking-[0.15em] mt-0.5">Your AI. Your Keys.</span>
                         </div>
-                    </div>
+                    </Link>
                     {/* Mobile Close Button */}
                     <button
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="md:hidden text-slate-400 hover:text-white transition-colors"
                     >
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
-                <Link href="/chat/new" className="flex items-center gap-3 w-full px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded-lg transition-all group mb-6">
-                    <span className="material-symbols-outlined text-primary group-hover:scale-105 transition-transform font-light">add</span>
-                    <span className="text-sm font-medium text-white">New Chat</span>
+                
+                <Link href="/chat/new" className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white rounded-xl transition-all group mb-5 shadow-md font-medium text-[14px]">
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    <span>New Chat</span>
                 </Link>
-            </div>
 
-            <div className="flex-1 px-4 pb-4 flex flex-col overflow-hidden">
-                <div className="relative mb-4 shrink-0">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+                <div className="relative mb-2 shrink-0">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[16px]">search</span>
                     <input
                         type="text"
+                        name="chatSearch"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck="false"
                         placeholder="Search chats..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white/5 border border-white/5 rounded-lg py-2 pl-10 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-primary/50 transition-colors"
+                        className="w-full bg-white/[0.02] border border-white/5 rounded-lg py-2 pl-9 pr-3 text-[13px] text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500/30 transition-colors"
                     />
                 </div>
+            </div>
 
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 -mr-1">
+            <div className="flex-1 px-3 md:px-5 pb-4 flex flex-col overflow-hidden mt-1">
+                <div className="flex-1 overflow-y-auto space-y-0.5 pr-1 -mr-1 custom-scrollbar">
+                    {filteredChats.length > 0 && (
+                        <h3 className="px-3 pt-2 pb-3 text-[10px] font-bold text-slate-500 tracking-[0.15em] uppercase">History</h3>
+                    )}
                     {filteredChats.length > 0 ? (
-                        filteredChats.map((chat) => (
-                            <Link
-                                key={chat.id}
-                                href={`/chat/${chat.id}`}
-                                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-all group relative ${pathname === `/chat/${chat.id}` ? 'bg-white/10 border-white/10 shadow-sm' : 'hover:bg-white/5 border-transparent'}`}
-                            >
-                                <span className="material-symbols-outlined text-[18px] text-slate-500 group-hover:text-primary/70 transition-colors shrink-0">chat_bubble</span>
-                                <span className={`text-[13px] font-medium truncate flex-1 pr-6 ${pathname === `/chat/${chat.id}` ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
-                                    {chat.title}
-                                </span>
-                                <div
-                                    onClick={(e) => handleDeleteChat(e, chat.id)}
-                                    role="button"
-                                    aria-disabled={isDeleting === chat.id}
-                                    className={`absolute right-2 p-1.5 rounded-md text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 ${isDeleting === chat.id ? 'opacity-50 pointer-events-none' : ''}`}
-                                    title="Delete chat"
+                        filteredChats.map((chat) => {
+                            const isActive = pathname === `/chat/${chat.id}`;
+                            return (
+                                <Link
+                                    key={chat.id}
+                                    href={`/chat/${chat.id}`}
+                                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg transition-all group relative ${isActive ? 'bg-purple-500/10 text-white' : 'hover:bg-white/[0.03] text-slate-400 hover:text-slate-200'}`}
                                 >
-                                    {isDeleting === chat.id ? (
-                                        <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
-                                    ) : (
-                                        <span className="material-symbols-outlined text-[14px]">delete</span>
-                                    )}
-                                </div>
-                            </Link>
-                        ))
+                                    <span className={`material-symbols-outlined text-[16px] shrink-0 ${isActive ? 'text-purple-400' : 'text-slate-500 group-hover:text-slate-400'}`}>chat_bubble_outline</span>
+                                    <span className={`text-[13px] font-medium truncate flex-1 pr-6`}>
+                                        {chat.title}
+                                    </span>
+                                    <div
+                                        onClick={(e) => handleDeleteChat(e, chat.id)}
+                                        role="button"
+                                        aria-disabled={isDeleting === chat.id}
+                                        className={`absolute right-1.5 p-1 rounded-md text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 ${isDeleting === chat.id ? 'opacity-50 pointer-events-none' : ''}`}
+                                        title="Delete chat"
+                                    >
+                                        {isDeleting === chat.id ? (
+                                            <span className="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                                        ) : (
+                                            <span className="material-symbols-outlined text-[14px]">delete</span>
+                                        )}
+                                    </div>
+                                </Link>
+                            );
+                        })
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 text-center px-4 animate-fade-in opacity-50">
-                            <span className="material-symbols-outlined text-3xl text-slate-600 mb-2">{searchQuery ? 'search_off' : 'history'}</span>
-                            <p className="text-xs text-slate-500 font-medium">{searchQuery ? 'No chats found' : 'No previous conversations'}</p>
-                            <p className="text-[10px] text-slate-600 mt-1">{searchQuery ? 'Try a different search term' : 'Chats will appear here'}</p>
+                            <span className="material-symbols-outlined text-3xl text-slate-600 mb-2">{searchQuery ? 'search_off' : 'chat_bubble_outline'}</span>
+                            <p className="text-xs text-slate-500 font-medium">{searchQuery ? 'No chats found' : 'No conversations yet'}</p>
+                            <p className="text-[10px] text-slate-600 mt-1">{searchQuery ? 'Try a different search term' : 'Start a new chat to begin'}</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            <div className="p-4 border-t border-white/5 flex flex-col gap-2 relative" ref={profileMenuRef}>
+            {/* API Keys Status */}
+            <div className="px-4 pb-2 mt-auto">
+                <button
+                    onClick={() => setIsAPIKeysModalOpen(true)}
+                    className="w-full p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-500/20 hover:bg-white/[0.04] transition-all group"
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-slate-500 tracking-[0.1em] uppercase">API Keys</span>
+                        <span className="text-[10px] font-medium text-purple-400">{connectedCount}/4 connected</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                        {[
+                            { key: 'openai', label: 'OpenAI' },
+                            { key: 'anthropic', label: 'Claude' },
+                            { key: 'gemini', label: 'Gemini' },
+                            { key: 'sarvam', label: 'Sarvam' },
+                        ].map(({ key, label }) => (
+                            <div key={key} className={`flex items-center gap-1 text-[9px] font-medium px-2 py-1 rounded-md shrink-0 ${connectedKeys[key] ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-600 bg-white/[0.03]'}`}>
+                                <span className="material-symbols-outlined text-[10px]">{connectedKeys[key] ? 'check_circle' : 'cancel'}</span>
+                                {label}
+                            </div>
+                        ))}
+                    </div>
+                </button>
+            </div>
+
+
+
+            <div className="p-4 flex flex-col gap-2 relative" ref={profileMenuRef}>
                 {/* Pop-up Profile Menu */}
                 {isProfileMenuOpen && (
                     <div className="absolute bottom-[4.5rem] left-4 right-4 bg-surface-dark border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-fade-in z-50 p-2 flex flex-col gap-1 backdrop-blur-2xl">
                         {/* User Info Header as Button */}
                         <button onClick={() => { setIsProfileModalOpen(true); setIsProfileMenuOpen(false); }} className="flex w-full items-center gap-3 p-3 mb-1 bg-white/[0.03] hover:bg-white/5 transition-colors rounded-xl border border-white/5 text-left group">
-                            <div className="size-8 rounded-full bg-primary border text-black font-semibold text-xs flex items-center justify-center shrink-0 shadow-glow-gold-subtle group-hover:scale-105 transition-transform">
+                            <div className="size-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white font-semibold text-xs flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                                 {initial}
                             </div>
                             <div className="flex-1 min-w-0 pr-2">
@@ -223,13 +280,13 @@ export default function Sidebar({ user }: { user?: User | null }) {
 
                         {/* Menu Options */}
                         <div className="flex flex-col px-1 pt-1 pb-2">
-                            <button onClick={() => { setIsPersonalizationModalOpen(true); setIsProfileMenuOpen(false); }} className="flex items-center gap-3 p-2 px-3 text-[13px] font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left group">
-                                <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">palette</span>
-                                Personalization
-                            </button>
                             <button onClick={() => { setIsSettingsOpen(true); setIsProfileMenuOpen(false); }} className="flex items-center gap-3 p-2 px-3 text-[13px] font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left group">
-                                <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors">settings</span>
+                                <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-purple-400 transition-colors">settings</span>
                                 Settings
+                            </button>
+                            <button onClick={() => { setIsPersonalizationModalOpen(true); setIsProfileMenuOpen(false); }} className="flex items-center gap-3 p-2 px-3 text-[13px] font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left group">
+                                <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-purple-400 transition-colors">palette</span>
+                                Personalization
                             </button>
                         </div>
 
@@ -244,17 +301,19 @@ export default function Sidebar({ user }: { user?: User | null }) {
                     </div>
                 )}
 
-                <button onClick={() => userEmail && setIsProfileMenuOpen(!isProfileMenuOpen)} className={`flex items-center gap-3 w-full p-2 py-2.5 rounded-xl text-left group relative transition-colors ${userEmail ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'}`}>
-                    <div className={`size-8 rounded-full bg-surface-dark border border-white/10 flex items-center justify-center text-slate-300 font-serif font-medium text-xs ring-1 ring-transparent transition-all ${userEmail ? 'group-hover:ring-primary/40' : ''}`}>
+                {/* Profile Trigger Button */}
+                <button
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className="flex w-full items-center gap-3 p-2 hover:bg-white/[0.04] transition-colors rounded-xl border border-transparent hover:border-white/5 text-left group"
+                >
+                    <div className="size-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
                         {initial}
                     </div>
-                    <div className="flex-1 min-w-0 pr-4">
-                        <p className="text-sm font-medium text-white truncate">{displayName}</p>
-                        <p className="text-[10px] text-primary/70 truncate uppercase tracking-wide mt-0.5 font-semibold">{userEmail ? 'Member' : ''}</p>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-white truncate">{displayName}</p>
+                        <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{userEmail}</p>
                     </div>
-                    {userEmail && (
-                        <span className={`material-symbols-outlined text-slate-500 text-[18px] transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-90 text-primary' : 'group-hover:text-slate-300'}`}>settings</span>
-                    )}
+                    <span className="material-symbols-outlined text-slate-500 group-hover:text-slate-300 transition-colors text-[20px]">more_vert</span>
                 </button>
             </div>
         </>
@@ -296,6 +355,10 @@ export default function Sidebar({ user }: { user?: User | null }) {
             <SettingsModal
                 isOpen={isSettingsOpen}
                 onClose={() => setIsSettingsOpen(false)}
+            />
+            <APIKeysModal
+                isOpen={isAPIKeysModalOpen}
+                onClose={() => setIsAPIKeysModalOpen(false)}
             />
             <PersonalizationModal
                 isOpen={isPersonalizationModalOpen}

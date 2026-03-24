@@ -39,16 +39,18 @@ export function ModalBase({ isOpen, onClose, title, children }: {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ type: "spring", duration: 0.4 }}
-                        className="relative w-full max-w-lg bg-surface/80 backdrop-blur-xl border border-border rounded-[20px] shadow-2xl p-6 overflow-hidden"
+                        className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-surface/80 backdrop-blur-xl border border-border rounded-[20px] shadow-2xl overflow-hidden"
                     >
-                        <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between p-6 pb-4 shrink-0">
                             <h2 className="text-xl font-semibold">{title}</h2>
-                            <button onClick={onClose} className="p-1 rounded-full hover:bg-surface-hover text-foreground/60 hover:text-foreground transition-colors">
+                            <button onClick={onClose} className="p-1 rounded-full hover:bg-surface-hover text-foreground/60 hover:text-foreground transition-colors shrink-0">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        {children}
+                        <div className="px-6 pb-6 overflow-y-auto custom-scrollbar">
+                            {children}
+                        </div>
 
                     </motion.div>
                 </div>

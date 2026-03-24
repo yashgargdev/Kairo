@@ -8,11 +8,17 @@ import { useEffect, useRef, useState, use, useMemo, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { getChatMessages } from '../actions';
+import { useUI } from '@/components/Providers/UIProvider';
 
 export default function ChatPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: chatId } = use(params);
     const router = useRouter();
     const isNewChat = chatId === 'new';
+    const { selectedModel, availableModels } = useUI();
+    
+    // Resolve pretty name for current model
+    const uiModelInfo = availableModels.find(m => m.id === selectedModel);
+    const resolvedModelName = uiModelInfo ? uiModelInfo.name : selectedModel;
 
     // Track the active chat ID, starting with URL param if it's not new
     const [activeChatId, setActiveChatId] = useState<string | undefined>(isNewChat ? undefined : chatId);
@@ -36,8 +42,21 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
                 if (init?.body) {
                     const parsedBody = JSON.parse(init.body as string);
-                    // Inject latest chatId to prevent stale closure issues
+                    
+                    // Inject latest chatId
                     parsedBody.chatId = activeChatIdRef.current;
+                    
+                    // Inject API keys from localStorage
+                    parsedBody.keys = {
+                        openai: localStorage.getItem('kairo_api_key_openai') || '',
+                        anthropic: localStorage.getItem('kairo_api_key_anthropic') || '',
+                        gemini: localStorage.getItem('kairo_api_key_gemini') || '',
+                        sarvam: localStorage.getItem('kairo_api_key_sarvam') || '',
+                    };
+                    
+                    // Inject selected model
+                    parsedBody.model = parsedBody.overrideModel || localStorage.getItem('kairo_selected_model') || 'gpt-4o';
+
                     init.body = JSON.stringify(parsedBody);
                 }
 
@@ -56,6 +75,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             }
         }),
         onFinish: () => {
+            setIsRegenerating(false);
             setTimeout(() => window.dispatchEvent(new Event('chat-updated')), 300);
         }
     });
@@ -66,6 +86,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     const [images, setImages] = useState<string[]>([]);
     const [archivedVersions, setArchivedVersions] = useState<any[]>([]);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+    const [isRegenerating, setIsRegenerating] = useState(false);
     const isLoading = status !== 'ready' && status !== 'error';
 
     // 1. Fetch historical messages if not a new chat
@@ -74,7 +95,6 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             const fetchHistory = async () => {
                 try {
                     const history = await getChatMessages(chatId);
-                    // Map Supabase history to AI SDK Message format
                     const mappedMessages = history.map((m: any) => ({
                         id: m.id,
                         role: m.role,
@@ -116,14 +136,12 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         if (attachments.length > 0) {
             const attachmentText = attachments.map(att => `\n\n--- Document: ${att.name} ---\n${att.content}`).join('');
             finalInput += attachmentText;
-            setAttachments([]); // Clear attachments after sending
+            setAttachments([]);
         }
 
-        // Attach images by converting them to Data URLs inside the standard attachments format
         let messageAttachments = undefined;
         if (images.length > 0) {
             messageAttachments = images.map((imgBase64, index) => {
-                // Infer content type from base64 prefix
                 let contentType = 'image/jpeg';
                 const match = imgBase64.match(/^data:([^;]+);base64,/);
                 if (match) contentType = match[1];
@@ -134,11 +152,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                     name: `uploaded_image_${index + 1}`
                 };
             });
-            setImages([]); // Clear images after sending
+            setImages([]);
         }
 
-        // Explicitly send the latest activeChatId to prevent creating separate
-        // chat logs when staying on the /chat/new route after the first message
         sendMessage({
             role: 'user',
             content: finalInput || 'Attached images.',
@@ -147,18 +163,27 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         setInput('');
     };
 
-    const handleRegenerate = useCallback(() => {
+    const handleRegenerate = useCallback((newModelId?: string) => {
+        setIsRegenerating(true);
         const lastAssistantMsg = messages.slice().reverse().find(m => m.role === 'assistant');
         if (lastAssistantMsg) {
             setArchivedVersions(prev => [...prev, lastAssistantMsg]);
         }
+        
+        let overrideModel = newModelId;
+        if (newModelId) {
+            localStorage.setItem('kairo_selected_model', newModelId);
+            // Optionally dispatch event to trigger UIProvider update if needed, but not strictly needed 
+            // since fetch interceptor reads from localStorage directly.
+        }
+
         regenerate({
             // @ts-ignore
-            body: { mode, chatId: activeChatId, isRegenerate: true }
+            body: { mode, chatId: activeChatId, isRegenerate: true, overrideModel }
         });
     }, [messages, mode, activeChatId, regenerate]);
 
-    // Auto-scroll: use instant for streaming updates to avoid janky behaviour
+    // Auto-scroll
     const isStreamingRef = useRef(false);
     useEffect(() => {
         isStreamingRef.current = isLoading;
@@ -202,17 +227,25 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                     parts={m.parts}
                     versions={m.versions}
                     onRegenerate={isLastAssistant ? handleRegenerate : undefined}
+                    modelName={m.role === 'assistant' ? resolvedModelName : undefined}
                 />
             );
         });
-    }, [messages, archivedVersions, handleRegenerate]);
+    }, [messages, archivedVersions, handleRegenerate, resolvedModelName]);
+
+    const promptSuggestions = [
+        { icon: 'code', label: 'Write code', prompt: 'Help me write clean, efficient code for...' },
+        { icon: 'school', label: 'Explain concept', prompt: 'Explain the concept of...' },
+        { icon: 'analytics', label: 'Analyze data', prompt: 'Analyze this data and find patterns...' },
+        { icon: 'translate', label: 'Translate text', prompt: 'Translate the following text to...' },
+    ];
 
     if (isLoadingHistory) {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <div className="flex items-center gap-2 text-slate-500 animate-pulse">
                     <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                    <span className="text-xs font-medium uppercase tracking-widest">Retrieving History...</span>
+                    <span className="text-xs font-medium uppercase tracking-widest">Loading conversation...</span>
                 </div>
             </div>
         );
@@ -220,37 +253,52 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
     return (
         <>
-            <div className="flex-1 overflow-y-auto px-4 md:px-0 pt-24 pb-48 scroll-smooth">
-                <div className="max-w-3xl mx-auto flex flex-col gap-8 py-4 px-4 w-full">
+            <div className="flex-1 overflow-y-auto px-4 md:px-0 pt-20 pb-48 scroll-smooth chat-glow-bg">
+                <div className="max-w-3xl mx-auto flex flex-col gap-8 py-4 px-4 w-full relative z-10">
 
                     {messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center mt-20 md:mt-32 text-center animate-fade-in px-4">
-                            <div className="size-16 md:size-20 flex items-center justify-center mb-6">
-                                <img src="/Kairo-Logo-White.png" alt="Kairo Logo" className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(212,175,55,0.25)]" />
+                        <div className="flex flex-col items-center justify-center mt-16 md:mt-28 text-center animate-fade-in px-4 w-full">
+                            <div className="mb-6">
+                                <span className="material-symbols-outlined text-[48px] text-purple-400/60">auto_awesome</span>
                             </div>
-                            <h1 className="text-2xl md:text-3xl font-serif text-white mb-2 tracking-wide">Hi, I'm Kairo</h1>
-                            <p className="text-slate-500 font-light text-sm md:text-base px-8 md:px-0">How can I help you evolve today?</p>
+                            <h1 className="text-3xl md:text-5xl font-semibold text-white mb-3 tracking-tight">Chat with your AI</h1>
+                            <p className="text-slate-400 text-base md:text-lg mb-2 max-w-md">Use your own API keys. No subscriptions. No markup.</p>
+                            <p className="text-slate-600 text-xs mb-10">Powered by your API keys</p>
+                            
+                            <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-lg mx-auto">
+                                {promptSuggestions.map((s) => (
+                                    <button
+                                        key={s.label}
+                                        onClick={() => setInput(s.prompt)}
+                                        className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.03] border border-white/5 hover:border-purple-500/20 hover:bg-purple-500/5 text-slate-400 hover:text-slate-200 text-[13px] font-medium transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-[16px] text-purple-400/70">{s.icon}</span>
+                                        {s.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     ) : (
                         <div className="flex justify-center mb-4">
                             <span className="text-[9px] md:text-[10px] font-medium text-slate-500 uppercase tracking-widest bg-surface-dark/40 backdrop-blur-sm px-3 py-1 rounded-full border border-white/5">
-                                {isNewChat ? 'New Session Started' : 'Session Active'}
+                                {isNewChat ? 'New Session' : 'Session Active'}
                             </span>
                         </div>
                     )}
 
                     {groupedMessageElements}
 
-                    {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                    {isLoading && (messages[messages.length - 1]?.role === 'user' || isRegenerating) && (
                         <div className="flex justify-start w-full animate-fade-in">
                             <div className="flex items-start gap-3 md:gap-4">
                                 <div className="size-7 md:size-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-1">
-                                    <span className="material-symbols-outlined text-primary text-[16px] md:text-[18px]">smart_toy</span>
+                                    <span className="material-symbols-outlined text-purple-400 text-[16px] md:text-[18px]">smart_toy</span>
                                 </div>
-                                <div className="p-3 md:p-4 rounded-2xl rounded-tl-sm ai-response-card backdrop-blur-sm shadow-sm flex items-center gap-1.5 h-10 md:h-12">
-                                    <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-primary/40 animate-bounce"></span>
-                                    <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "0.15s" }}></span>
-                                    <span className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: "0.3s" }}></span>
+                                <div className="p-3 md:p-4 rounded-2xl rounded-tl-sm ai-response-card backdrop-blur-sm shadow-sm flex items-center gap-2 h-10 md:h-12">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400/50 animate-bounce"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400/50 animate-bounce" style={{ animationDelay: "0.15s" }}></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400/50 animate-bounce" style={{ animationDelay: "0.3s" }}></span>
+                                    <span className="text-[11px] text-slate-500 ml-2 font-medium">AI is thinking...</span>
                                 </div>
                             </div>
                         </div>
@@ -264,32 +312,13 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                 <div className="absolute bottom-0 left-0 w-full h-48 md:h-64 bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent"></div>
                 <div className="relative w-full px-4 md:px-6 pb-6 md:pb-8 max-w-3xl mx-auto pointer-events-auto">
 
-                    {messages.length === 0 && (
-                        <div className="flex flex-wrap justify-center mb-6 gap-2 md:gap-3 animate-fade-in px-4">
-                            <button
-                                onClick={() => setInput("Can you write a python script to calculate the Fibonacci sequence?")}
-                                className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-surface-dark/80 backdrop-blur-md border border-white/10 rounded-full text-[10px] md:text-[11px] font-medium text-slate-400 hover:text-white hover:border-primary/30 transition-all shadow-lg hover:shadow-primary/5 group"
-                            >
-                                <span className="material-symbols-outlined text-[14px] text-primary/70 group-hover:text-primary transition-colors">code</span>
-                                Write code
-                            </button>
-                            <button
-                                onClick={() => setInput("Explain React Server Components like I'm 5")}
-                                className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-surface-dark/80 backdrop-blur-md border border-white/10 rounded-full text-[10px] md:text-[11px] font-medium text-slate-400 hover:text-white hover:border-primary/30 transition-all shadow-lg hover:shadow-primary/5 group"
-                            >
-                                <span className="material-symbols-outlined text-[14px] text-primary/70 group-hover:text-primary transition-colors">school</span>
-                                Explain concept
-                            </button>
-                        </div>
-                    )}
-
                     <InputBar input={input} handleInputChange={handleInputChange} handleSubmit={handleSubmit} isLoading={isLoading} isAuthenticated={isAuthenticated} mode={mode} setMode={setMode} attachments={attachments} setAttachments={setAttachments} images={images} setImages={setImages} />
 
-                    <p className="text-center text-[9px] md:text-[10px] text-slate-600 mt-4 font-medium tracking-wider uppercase">
-                        KAIRO AI CAN MAKE MISTAKES. VERIFY IMPORTANT INFORMATION.
-                    </p>
+                    <div className="flex justify-center items-center gap-2 text-center text-[9px] text-slate-600 mt-4 font-medium">
+                        <span>No subscription — pay only for API usage</span>
+                    </div>
                 </div>
-            </div >
+            </div>
         </>
     );
 }
