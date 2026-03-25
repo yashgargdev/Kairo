@@ -6,13 +6,14 @@ import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { useState, useEffect, memo } from 'react';
 import { useUI } from '@/components/Providers/UIProvider';
 
-export const MessageBubble = memo(function MessageBubble({ role, content, parts, versions, onRegenerate, modelName }: {
+export const MessageBubble = memo(function MessageBubble({ role, content, parts, versions, onRegenerate, modelName, isStreaming }: {
     role: 'user' | 'assistant',
     content?: string,
     parts?: Array<{ type: string, text?: string }>,
     versions?: Array<any>,
     onRegenerate?: (modelId?: string) => void,
-    modelName?: string
+    modelName?: string,
+    isStreaming?: boolean
 }) {
     const isUser = role === 'user';
     const [versionIndex, setVersionIndex] = useState(0);
@@ -35,7 +36,17 @@ export const MessageBubble = memo(function MessageBubble({ role, content, parts,
 
     let rawMessageText = activeContent || activeParts?.filter((p: any) => p.type === 'text').map((p: any) => p.text).join('') || '';
 
-    // Parse <think> tags
+    // Extract reasoning from AI SDK reasoning parts (Claude, Gemini, etc.)
+    let sdkReasoning = '';
+    if (activeParts) {
+        sdkReasoning = activeParts
+            .filter((p: any) => p.type === 'reasoning')
+            .map((p: any) => p.text || p.reasoning || '')
+            .join('\n')
+            .trim();
+    }
+
+    // Parse <think> tags (Sarvam models)
     let thinkText = '';
     let isThinking = false;
     let messageText = rawMessageText;
@@ -52,6 +63,11 @@ export const MessageBubble = memo(function MessageBubble({ role, content, parts,
             messageText = rawMessageText.substring(0, thinkStart).trim();
             isThinking = true;
         }
+    }
+
+    // Merge: prefer <think> tag content, fallback to SDK reasoning parts
+    if (!thinkText && sdkReasoning) {
+        thinkText = sdkReasoning;
     }
 
     const [copied, setCopied] = useState(false);
@@ -121,10 +137,11 @@ export const MessageBubble = memo(function MessageBubble({ role, content, parts,
                         </div>
                     )}
                     
-                    {messageText && (
-                        <div className="p-6 md:p-8 rounded-2xl rounded-tl-sm ai-response-card backdrop-blur-sm w-full relative group">
-                            <div className="absolute inset-0 rounded-2xl border border-purple-500/0 group-hover:border-purple-500/5 transition-colors pointer-events-none"></div>
+                    {(messageText || isStreaming) && (
+                        <div className={`p-6 md:p-8 rounded-2xl rounded-tl-sm ai-response-card backdrop-blur-sm w-full relative group ${!messageText ? 'bg-transparent shadow-none border-transparent p-0 md:p-0' : ''}`}>
+                            {messageText && <div className="absolute inset-0 rounded-2xl border border-purple-500/0 group-hover:border-purple-500/5 transition-colors pointer-events-none"></div>}
                         <div className="prose prose-invert prose-base max-w-none text-slate-300 leading-8">
+                            {messageText && (
                             <ReactMarkdown
                                 components={{
                                     p: ({ node, ...props }) => <p className="mb-5 text-[15px] font-light text-slate-200" {...props} />,
@@ -142,94 +159,100 @@ export const MessageBubble = memo(function MessageBubble({ role, content, parts,
                             >
                                 {messageText}
                             </ReactMarkdown>
+                            )}
+                            {isStreaming && (
+                                <span className={`inline-block w-1.5 h-4 ml-1 bg-purple-400/80 animate-pulse align-middle ${!messageText ? 'mt-3 lg:mt-5 bg-purple-400/60' : ''}`} style={{ animationDuration: '0.8s' }}></span>
+                            )}
                         </div>
                     </div>
                     )}
 
-                    <div className="flex items-center gap-3 pl-1">
-                        <button onClick={handleCopy} className={`p-1.5 rounded-full transition-colors ${copied ? 'text-emerald-500 bg-white/5' : 'text-slate-600 hover:text-purple-400 hover:bg-white/5'}`} title={copied ? "Copied" : "Copy response"}>
-                            <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'content_copy'}</span>
-                        </button>
-                        <button onClick={() => setFeedback(feedback === 'like' ? null : 'like')} className={`p-1.5 rounded-full transition-colors ${feedback === 'like' ? 'text-purple-400 bg-white/5' : 'text-slate-600 hover:text-purple-400 hover:bg-white/5'}`} title="Good response">
-                            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: feedback === 'like' ? '"FILL" 1' : '"FILL" 0' }}>thumb_up</span>
-                        </button>
-                        <button onClick={() => setFeedback(feedback === 'dislike' ? null : 'dislike')} className={`p-1.5 rounded-full transition-colors ${feedback === 'dislike' ? 'text-rose-500 bg-white/5' : 'text-slate-600 hover:text-rose-500 hover:bg-white/5'}`} title="Bad response">
-                            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: feedback === 'dislike' ? '"FILL" 1' : '"FILL" 0' }}>thumb_down</span>
-                        </button>
+                    {!isStreaming && (
+                        <div className="flex items-center gap-3 pl-1">
+                            <button onClick={handleCopy} className={`p-1.5 rounded-full transition-colors ${copied ? 'text-emerald-500 bg-white/5' : 'text-slate-600 hover:text-purple-400 hover:bg-white/5'}`} title={copied ? "Copied" : "Copy response"}>
+                                <span className="material-symbols-outlined text-[16px]">{copied ? 'check' : 'content_copy'}</span>
+                            </button>
+                            <button onClick={() => setFeedback(feedback === 'like' ? null : 'like')} className={`p-1.5 rounded-full transition-colors ${feedback === 'like' ? 'text-purple-400 bg-white/5' : 'text-slate-600 hover:text-purple-400 hover:bg-white/5'}`} title="Good response">
+                                <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: feedback === 'like' ? '"FILL" 1' : '"FILL" 0' }}>thumb_up</span>
+                            </button>
+                            <button onClick={() => setFeedback(feedback === 'dislike' ? null : 'dislike')} className={`p-1.5 rounded-full transition-colors ${feedback === 'dislike' ? 'text-rose-500 bg-white/5' : 'text-slate-600 hover:text-rose-500 hover:bg-white/5'}`} title="Bad response">
+                                <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: feedback === 'dislike' ? '"FILL" 1' : '"FILL" 0' }}>thumb_down</span>
+                            </button>
 
-                        {versions && versions.length > 1 && (
-                            <div className="flex items-center gap-1.5 text-slate-500 bg-white/5 rounded-full px-2 py-0.5 ml-2">
-                                <button
-                                    onClick={() => setVersionIndex(Math.max(0, versionIndex - 1))}
-                                    disabled={versionIndex === 0}
-                                    className="p-1 hover:text-white disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
-                                >
-                                    <span className="material-symbols-outlined text-[13px]">chevron_left</span>
-                                </button>
-                                <span className="text-[10px] font-medium font-mono min-w-[24px] text-center select-none">
-                                    {versionIndex + 1}/{versions.length}
-                                </span>
-                                <button
-                                    onClick={() => setVersionIndex(Math.min(versions.length - 1, versionIndex + 1))}
-                                    disabled={versionIndex === versions.length - 1}
-                                    className="p-1 hover:text-white disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
-                                >
-                                    <span className="material-symbols-outlined text-[13px]">chevron_right</span>
-                                </button>
-                            </div>
-                        )}
+                            {versions && versions.length > 1 && (
+                                <div className="flex items-center gap-1.5 text-slate-500 bg-white/5 rounded-full px-2 py-0.5 ml-2">
+                                    <button
+                                        onClick={() => setVersionIndex(Math.max(0, versionIndex - 1))}
+                                        disabled={versionIndex === 0}
+                                        className="p-1 hover:text-white disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-[13px]">chevron_left</span>
+                                    </button>
+                                    <span className="text-[10px] font-medium font-mono min-w-[24px] text-center select-none">
+                                        {versionIndex + 1}/{versions.length}
+                                    </span>
+                                    <button
+                                        onClick={() => setVersionIndex(Math.min(versions.length - 1, versionIndex + 1))}
+                                        disabled={versionIndex === versions.length - 1}
+                                        className="p-1 hover:text-white disabled:opacity-30 disabled:hover:text-slate-500 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+                                    </button>
+                                </div>
+                            )}
 
-                        <div className="flex-1"></div>
-                        
-                        {!isUser && modelName && (
-                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-slate-400 font-medium tracking-wide mr-2 select-none">
-                                <span className="material-symbols-outlined text-[12px] text-purple-400/70">auto_awesome</span>
-                                {modelName}
-                            </div>
-                        )}
+                            <div className="flex-1"></div>
+                            
+                            {!isUser && modelName && (
+                                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-[10px] text-slate-400 font-medium tracking-wide mr-2 select-none">
+                                    <span className="material-symbols-outlined text-[12px] text-purple-400/70">auto_awesome</span>
+                                    {modelName}
+                                </div>
+                            )}
 
-                        {onRegenerate && (
-                            <div className="relative flex items-center bg-white/5 hover:bg-white/10 border border-white/5 rounded transition-all ml-1">
-                                <button onClick={() => onRegenerate()} className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400 hover:text-white transition-colors px-2 py-1 uppercase tracking-wide">
-                                    <span className="material-symbols-outlined text-[14px]">refresh</span>
-                                    Regenerate
-                                </button>
-                                <div className="w-[1px] h-3 bg-white/10"></div>
-                                <button 
-                                    onClick={() => setShowModels(!showModels)}
-                                    className="px-1 py-1 text-slate-400 hover:text-white transition-colors rounded-r flex items-center justify-center"
-                                >
-                                    <span className="material-symbols-outlined text-[14px]">arrow_drop_down</span>
-                                </button>
+                            {onRegenerate && (
+                                <div className="relative flex items-center bg-white/5 hover:bg-white/10 border border-white/5 rounded transition-all ml-1">
+                                    <button onClick={() => onRegenerate()} className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400 hover:text-white transition-colors px-2 py-1 uppercase tracking-wide">
+                                        <span className="material-symbols-outlined text-[14px]">refresh</span>
+                                        Regenerate
+                                    </button>
+                                    <div className="w-[1px] h-3 bg-white/10"></div>
+                                    <button 
+                                        onClick={() => setShowModels(!showModels)}
+                                        className="px-1 py-1 text-slate-400 hover:text-white transition-colors rounded-r flex items-center justify-center"
+                                    >
+                                        <span className="material-symbols-outlined text-[14px]">arrow_drop_down</span>
+                                    </button>
 
-                                {showModels && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setShowModels(false)}></div>
-                                        <div className="absolute top-full right-0 mt-1 w-48 bg-[#1a1a1a] border border-white/10 rounded-lg shadow-2xl overflow-hidden z-50 py-1">
-                                            <div className="px-3 py-1.5 border-b border-white/5">
-                                                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Regenerate with...</span>
+                                    {showModels && (
+                                        <>
+                                            <div className="fixed inset-0 z-[60]" onClick={() => setShowModels(false)}></div>
+                                            <div className="absolute bottom-full right-0 mb-1 w-52 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-[70] py-1 backdrop-blur-xl">
+                                                <div className="px-3 py-1.5 border-b border-white/5">
+                                                    <span className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Regenerate with...</span>
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto custom-scrollbar overscroll-contain">
+                                                    {availableModels.map(m => (
+                                                        <button
+                                                            key={m.id}
+                                                            onClick={() => {
+                                                                setShowModels(false);
+                                                                onRegenerate(m.id);
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 text-[12px] text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-colors flex flex-col gap-0.5"
+                                                        >
+                                                            <span className="font-medium">{m.name}</span>
+                                                            <span className="text-[10px] text-slate-500">{m.provider}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="max-h-56 overflow-y-auto custom-scrollbar">
-                                                {availableModels.map(m => (
-                                                    <button
-                                                        key={m.id}
-                                                        onClick={() => {
-                                                            setShowModels(false);
-                                                            onRegenerate(m.id);
-                                                        }}
-                                                        className="w-full text-left px-3 py-2 text-[12px] text-slate-300 hover:bg-purple-500/20 hover:text-purple-300 transition-colors flex flex-col gap-0.5"
-                                                    >
-                                                        <span className="font-medium">{m.name}</span>
-                                                        <span className="text-[10px] text-slate-500">{m.provider}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

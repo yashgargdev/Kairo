@@ -89,6 +89,17 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     const [isRegenerating, setIsRegenerating] = useState(false);
     const isLoading = status !== 'ready' && status !== 'error';
 
+    // Snapshot model name per assistant message so the badge doesn't change
+    // when the user switches model in the header.
+    const messageModelMap = useRef<Record<string, string>>({});
+    useEffect(() => {
+        messages.forEach(m => {
+            if (m.role === 'assistant' && m.id && !messageModelMap.current[m.id]) {
+                messageModelMap.current[m.id] = resolvedModelName;
+            }
+        });
+    }, [messages, resolvedModelName]);
+
     // 1. Fetch historical messages if not a new chat
     useEffect(() => {
         if (!isNewChat) {
@@ -101,6 +112,16 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                         content: m.content,
                         createdAt: new Date(m.created_at)
                     }));
+
+                    // Pre-populate the model map from DB-stored model_name
+                    history.forEach((m: any) => {
+                        if (m.role === 'assistant' && m.id && m.model_name) {
+                            // Resolve pretty name from available models, fallback to raw model_name
+                            const info = availableModels.find(am => am.id === m.model_name);
+                            messageModelMap.current[m.id] = info ? info.name : m.model_name;
+                        }
+                    });
+
                     // @ts-ignore - Strict message types in some versions
                     setMessages(mappedMessages);
                 } catch (err) {
@@ -111,7 +132,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             };
             fetchHistory();
         }
-    }, [chatId, isNewChat, setMessages]);
+    }, [chatId, isNewChat, setMessages, availableModels]);
 
     // 2. Auth check
     useEffect(() => {
@@ -227,11 +248,12 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                     parts={m.parts}
                     versions={m.versions}
                     onRegenerate={isLastAssistant ? handleRegenerate : undefined}
-                    modelName={m.role === 'assistant' ? resolvedModelName : undefined}
+                    modelName={m.role === 'assistant' ? (messageModelMap.current[m.id] || resolvedModelName) : undefined}
+                    isStreaming={isLastAssistant && isLoading}
                 />
             );
         });
-    }, [messages, archivedVersions, handleRegenerate, resolvedModelName]);
+    }, [messages, archivedVersions, handleRegenerate, resolvedModelName, messageModelMap, isLoading]);
 
     const promptSuggestions = [
         { icon: 'code', label: 'Write code', prompt: 'Help me write clean, efficient code for...' },
@@ -288,11 +310,11 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
                     {groupedMessageElements}
 
-                    {isLoading && (messages[messages.length - 1]?.role === 'user' || isRegenerating) && (
+                    {isLoading && (messages.length === 0 || messages[messages.length - 1]?.role === 'user' || isRegenerating) && (
                         <div className="flex justify-start w-full animate-fade-in">
                             <div className="flex items-start gap-3 md:gap-4">
                                 <div className="size-7 md:size-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-1">
-                                    <span className="material-symbols-outlined text-purple-400 text-[16px] md:text-[18px]">smart_toy</span>
+                                    <span className="material-symbols-outlined text-purple-400 text-[16px] md:text-[18px] animate-pulse">smart_toy</span>
                                 </div>
                                 <div className="p-3 md:p-4 rounded-2xl rounded-tl-sm ai-response-card backdrop-blur-sm shadow-sm flex items-center gap-2 h-10 md:h-12">
                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-400/50 animate-bounce"></span>
@@ -300,6 +322,15 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-400/50 animate-bounce" style={{ animationDelay: "0.3s" }}></span>
                                     <span className="text-[11px] text-slate-500 ml-2 font-medium">AI is thinking...</span>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {isLoading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && !isRegenerating && (
+                        <div className="flex justify-start w-full pl-11 md:pl-12 animate-fade-in">
+                            <div className="flex items-center gap-2 py-1">
+                                <span className="w-1 h-1 rounded-full bg-purple-400/60 animate-pulse"></span>
+                                <span className="text-[10px] text-purple-400/60 font-medium tracking-wide uppercase">Generating...</span>
                             </div>
                         </div>
                     )}

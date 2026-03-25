@@ -249,22 +249,42 @@ export async function POST(req: Request) {
                 break;
         }
 
+        // Build provider-specific options to enable reasoning/thinking
+        const providerOptions: Record<string, any> = {};
+        if (model?.includes('claude')) {
+            providerOptions.anthropic = {
+                thinking: { type: 'enabled', budgetTokens: 5000 }
+            };
+        }
+        if (model?.includes('gemini')) {
+            providerOptions.google = {
+                thinkingConfig: { thinkingBudget: 5000 }
+            };
+        }
+
         const result = streamText({
             model: aiModel,
             system: systemPrompt,
             messages: sanitizedMessages,
             temperature: 0.7,
-            onFinish: async ({ text }) => {
+            providerOptions,
+            onFinish: async ({ text, reasoning }) => {
+                // Save full content including reasoning wrapped in <think> tags
+                const fullContent = reasoning
+                    ? `<think>${reasoning}</think>\n${text}`
+                    : text;
                 await supabase.from('messages').insert({
                     chat_id: currentChatId,
                     role: 'assistant',
-                    content: text
+                    content: fullContent,
+                    model_name: model || 'sarvam-m'
                 });
                 await supabase.from('chats').update({ updated_at: new Date().toISOString() }).eq('id', currentChatId);
             }
         });
 
         return result.toUIMessageStreamResponse({
+            sendReasoning: true,
             headers: {
                 'x-chat-id': currentChatId,
                 'Access-Control-Expose-Headers': 'x-chat-id'

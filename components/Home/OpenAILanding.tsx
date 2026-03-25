@@ -360,8 +360,10 @@ export default function OpenAILanding() {
             </div>
             {/* Brand */}
             <div>
-              <span className="text-base font-bold bg-gradient-to-r from-purple-400 to-orange-400 bg-clip-text text-transparent">Kairo</span>
-              <p className="mt-2 text-[12px] text-white/20 leading-relaxed">Chat with AI using your own keys. Open source forever.</p>
+              <Link href="/" className="inline-block mb-3">
+                <Image src="/Kairo-Logo-White.png" alt="Kairo" width={80} height={24} className="h-6 w-auto" />
+              </Link>
+              <p className="text-[12px] text-white/20 leading-relaxed">Chat with AI using your own keys. Open source forever.</p>
             </div>
           </div>
 
