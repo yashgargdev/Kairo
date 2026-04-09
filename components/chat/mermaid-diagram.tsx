@@ -71,14 +71,26 @@ export function MermaidDiagram({ code, title, className }: MermaidDiagramProps) 
       return
     }
 
+    const cleanupStrayElements = (uid: string) => {
+      // Mermaid appends temp containers to document.body — remove them after render
+      try {
+        document.getElementById(uid)?.remove()
+        document.getElementById(`d${uid}`)?.remove()
+        // Also clean up any orphaned mermaid error nodes in body
+        document.querySelectorAll('[id^="mermaid-"]').forEach(el => {
+          if (el.parentElement === document.body) el.remove()
+        })
+      } catch { /* ignore cleanup errors */ }
+    }
+
     const render = async () => {
+      const uid = `mermaid-${idRef.current}-${Date.now()}`
       try {
         const mermaid = await getMermaid()
 
         // parse() throws on invalid syntax — catch before render() touches the DOM
         await mermaid.parse(trimmed)
 
-        const uid = `mermaid-${idRef.current}-${Date.now()}`
         const { svg: rendered } = await mermaid.render(uid, trimmed)
 
         // Sanity-check: mermaid sometimes returns an error SVG silently
@@ -93,6 +105,7 @@ export function MermaidDiagram({ code, title, className }: MermaidDiagramProps) 
           setError(msg.split('\n')[0])
         }
       } finally {
+        cleanupStrayElements(uid)
         if (!cancelled) setLoading(false)
       }
     }
