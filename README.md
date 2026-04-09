@@ -16,8 +16,6 @@
     <a href="https://github.com/yashgargdev/Kairo/issues/new?template=feature_request.md"><strong>Request Feature</strong></a>
   </p>
 
-  <br />
-  <img src="public/og.png" alt="Kairo Screenshot" width="100%" style="border-radius:12px" />
 </div>
 
 ---
