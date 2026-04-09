@@ -172,14 +172,6 @@ function SidebarContent({
         </Link>
       </div>
 
-      {/* Expand handle (desktop collapsed) */}
-      {!isMobile && collapsed && (
-        <button onClick={onToggleCollapse}
-          className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-5 h-10 bg-[#111] border border-white/[0.08] rounded-r-lg flex items-center justify-center text-zinc-600 hover:text-zinc-300 hover:bg-[#1a1a1a] transition-colors z-10"
-        >
-          <ChevronRight className="w-3 h-3" />
-        </button>
-      )}
     </div>
   )
 }
@@ -190,13 +182,25 @@ export function ChatSidebar(props: ChatSidebarProps) {
   return (
     <>
       {/* Desktop */}
-      <motion.aside
-        animate={{ width: props.collapsed ? 56 : 256 }}
-        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-        className="relative hidden lg:flex flex-col h-full bg-[#0a0a0a] border-r border-white/[0.05] shrink-0 overflow-hidden"
-      >
-        <SidebarContent {...props} isMobile={false} />
-      </motion.aside>
+      <div className="relative hidden lg:flex shrink-0 h-full">
+        <motion.aside
+          animate={{ width: props.collapsed ? 56 : 256 }}
+          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col h-full bg-[#0a0a0a] border-r border-white/[0.05] overflow-hidden"
+        >
+          <SidebarContent {...props} isMobile={false} />
+        </motion.aside>
+
+        {/* Expand handle — outside aside so overflow:hidden doesn't clip it */}
+        {props.collapsed && (
+          <button
+            onClick={props.onToggleCollapse}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-10 bg-[#111] border border-white/[0.08] rounded-r-lg flex items-center justify-center text-zinc-500 hover:text-white hover:bg-[#1a1a1a] transition-colors z-10"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
 
       {/* Mobile backdrop */}
       <AnimatePresence>
