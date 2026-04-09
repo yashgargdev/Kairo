@@ -62,6 +62,57 @@ export function ChatInterface() {
     store.createConversation('claude-3-5-sonnet')
   }, [store])
 
+  // ── Image generation ─────────────────────────────────────────────────────────
+  const handleImageGen = useCallback(async (prompt: string, modelId: string, convId: string) => {
+    const provider = getProvider(modelId)
+    const apiKey = keys[provider]
+
+    if (!apiKey) {
+      store.addMessage(convId, { role: 'assistant', content: '', model: modelId, timestamp: new Date(), noKey: true, noKeyProvider: provider })
+      return
+    }
+
+    setIsResponding(true)
+
+    // Placeholder with generating spinner
+    const aiMsgId = store.addMessage(convId, {
+      role: 'assistant', content: '', model: modelId,
+      timestamp: new Date(), isStreaming: true,
+      toolResults: [{ id: 'img-gen', type: 'image', title: 'Generating image…', imagePrompt: prompt }],
+    })
+
+    try {
+      const res = await fetch('/api/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, modelId, apiKey }),
+      })
+      const data = await res.json()
+
+      if (data.error) {
+        store.updateMessage(convId, aiMsgId, {
+          isStreaming: false, errorMessage: `Image generation failed: ${data.error}`,
+          toolResults: [],
+        })
+      } else {
+        // Resolve URL — either direct URL or convert base64 to data URI
+        const imageUrl = data.url ?? (data.base64 ? `data:${data.mimeType};base64,${data.base64}` : '')
+        store.updateMessage(convId, aiMsgId, {
+          isStreaming: false,
+          toolResults: [{
+            id: 'img-gen', type: 'image',
+            title: 'Generated Image',
+            imageUrl,
+            imagePrompt: data.revisedPrompt ?? prompt,
+          }],
+        })
+      }
+    } catch {
+      store.updateMessage(convId, aiMsgId, { isStreaming: false, errorMessage: 'Network error during image generation.', toolResults: [] })
+    }
+    setIsResponding(false)
+  }, [store, keys])
+
   const handleRetry = useCallback(async (assistantMsgId: string, modelId: string) => {
     if (isResponding) return
     const convId = store.currentId
@@ -140,21 +191,23 @@ export function ChatInterface() {
     })
   }, [store, keys, settings, isResponding])
 
-  const handleSend = useCallback(async (text: string, modelId: string) => {
+  const handleSend = useCallback(async (text: string, modelId: string, tools: string[] = []) => {
     if (isResponding) return
-
-    const provider = getProvider(modelId)
-    const apiKey = keys[provider]
 
     let convId = store.currentId
     if (!convId) convId = store.createConversation(modelId)
 
     // Add user message
-    store.addMessage(convId, {
-      role: 'user',
-      content: text,
-      timestamp: new Date(),
-    })
+    store.addMessage(convId, { role: 'user', content: text, timestamp: new Date() })
+
+    // ── Image generation path ──────────────────────────────────────────────────
+    if (tools.includes('image')) {
+      await handleImageGen(text, modelId, convId)
+      return
+    }
+
+    const provider = getProvider(modelId)
+    const apiKey = keys[provider]
 
     // No key? Show error message bubble instead of calling API
     if (!apiKey) {
@@ -241,7 +294,7 @@ export function ChatInterface() {
         setIsResponding(false)
       },
     })
-  }, [store, keys, settings, isResponding])
+  }, [store, keys, settings, isResponding, handleImageGen])
 
   const messages = store.currentConversation?.messages ?? []
 

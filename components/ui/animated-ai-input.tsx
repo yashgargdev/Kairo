@@ -112,10 +112,26 @@ function useAutoResizeTextarea({ minHeight, maxHeight }: { minHeight: number; ma
 
 // ── Tools ──────────────────────────────────────────────────────────────────────
 export const TOOLS = [
-  { id: "code",    label: "Code",    icon: Code2,       color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20", hint: "Respond with well-formatted code blocks, specifying the language for each block." },
-  { id: "image",   label: "Image",   icon: ImageIcon,   color: "text-pink-400",    bg: "bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20",           hint: "" },
-  { id: "diagram", label: "Diagram", icon: GitBranch,   color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20",           hint: "" },
-  { id: "notes",   label: "Notes",   icon: StickyNote,  color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20",        hint: "If the response contains any tabular data, output it as a fenced csv code block." },
+  {
+    id: "code", label: "Code", icon: Code2,
+    color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20",
+    hint: "The user wants code. Always respond with complete, runnable code inside fenced code blocks with the correct language tag (e.g. ```python). Add brief inline comments for complex logic. Include a short usage example at the end if relevant.",
+  },
+  {
+    id: "image", label: "Image", icon: ImageIcon,
+    color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20",
+    hint: "", // routed to /api/image — no text hint needed
+  },
+  {
+    id: "diagram", label: "Diagram", icon: GitBranch,
+    color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20",
+    hint: "The user wants a visual diagram. Respond with a Mermaid.js diagram inside a fenced ```mermaid code block. Pick the most fitting type: flowchart TD for processes, sequenceDiagram for interactions, classDiagram for structures, erDiagram for databases, gantt for timelines. Keep node labels concise. After the block, add 1–2 sentences explaining the diagram.",
+  },
+  {
+    id: "notes", label: "Notes", icon: StickyNote,
+    color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20",
+    hint: "The user wants structured notes. Format your entire response as clean study notes: ## headings for main topics, bullet points for key facts, **bold** for important terms, and > blockquotes for definitions or callouts. End with a '## Summary' section of 3–5 bullets. If data is comparative, output it as a ```csv code block.",
+  },
 ];
 
 // ── File attachment helpers ────────────────────────────────────────────────────
@@ -152,7 +168,7 @@ interface Attachment {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 interface AIInputProps {
-  onSend: (message: string, model: string) => void;
+  onSend: (message: string, model: string, tools: string[]) => void;
   disabled?: boolean;
   className?: string;
   defaultModelId?: string;
@@ -289,7 +305,7 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
     if (fileContext) message = message ? `${message}\n\n${fileContext}` : fileContext
     if (hints) message = `${message}\n\n[${hints}]`
 
-    onSend(message, selectedModel.id)
+    onSend(message, selectedModel.id, activeTools)
     setValue("")
     setActiveTools([])
     setAttachments([])

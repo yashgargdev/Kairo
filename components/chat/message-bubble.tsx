@@ -10,6 +10,7 @@ import type { Message } from '@/types/chat'
 import { ThinkingBlock } from './thinking-block'
 import { ToolOutput } from './tool-output'
 import { SpreadsheetViewer } from './spreadsheet-viewer'
+import { MermaidDiagram } from './mermaid-diagram'
 
 interface MessageBubbleProps {
   message: Message
@@ -125,6 +126,11 @@ export function MessageBubble({ message, showThinking = true, fontSize = 'sm', o
                   // CSV → spreadsheet viewer
                   if (lang === 'csv') {
                     return <SpreadsheetViewer csv={String(children).trim()} />
+                  }
+
+                  // Mermaid → diagram renderer
+                  if (lang === 'mermaid') {
+                    return <MermaidDiagram code={String(children).trim()} />
                   }
 
                   return (
