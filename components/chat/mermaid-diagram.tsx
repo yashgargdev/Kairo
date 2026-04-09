@@ -18,7 +18,6 @@ async function getMermaid() {
   if (!mermaidInitialized) {
     mermaid.initialize({
       startOnLoad: false,
-      suppressErrors: true,
       theme: 'dark',
       themeVariables: {
         primaryColor: '#f59e0b',
