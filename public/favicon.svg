@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Rotated square (diamond) -->
+  <rect x="8" y="8" width="48" height="48" rx="10" fill="#f59e0b" transform="rotate(45 32 32)"/>
+  <!-- Zap / lightning bolt (Lucide Zap shape, centered) -->
+  <path
+    d="M36 10 L22 34 L30 34 L28 54 L42 30 L34 30 Z"
+    fill="#000000"
+    stroke="#000000"
+    stroke-width="1"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+</svg>
