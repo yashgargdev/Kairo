@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Bot, Check, ChevronDown, ImageIcon, Paperclip, StickyNote, GitBranch, Code2, X, FileText, FileCode, File, Loader2, AlertCircle } from "lucide-react";
+import { ArrowUp, Bot, Check, ChevronDown, ImageIcon, Paperclip, StickyNote, GitBranch, X, FileText, FileCode, File, Loader2, AlertCircle } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -112,11 +112,6 @@ function useAutoResizeTextarea({ minHeight, maxHeight }: { minHeight: number; ma
 
 // ── Tools ──────────────────────────────────────────────────────────────────────
 export const TOOLS = [
-  {
-    id: "code", label: "Code", icon: Code2,
-    color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20",
-    hint: "The user wants code. Always respond with complete, runnable code inside fenced code blocks with the correct language tag (e.g. ```python). Add brief inline comments for complex logic. Include a short usage example at the end if relevant.",
-  },
   {
     id: "image", label: "Image", icon: ImageIcon,
     color: "text-pink-400", bg: "bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20",
