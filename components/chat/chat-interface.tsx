@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageSquare, Zap, Settings, KeyRound } from 'lucide-react'
+import { MessageSquare, Zap, Settings, KeyRound, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { useChatStore } from '@/hooks/use-chat-store'
 import { useApiKeys } from '@/hooks/use-api-keys'
@@ -48,6 +48,7 @@ export function ChatInterface() {
   const store = useChatStore()
   const { keys, settings } = useApiKeys()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [isResponding, setIsResponding] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -258,12 +259,34 @@ export function ChatInterface() {
         onDelete={store.deleteConversation}
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(v => !v)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Mobile top bar */}
+        <div className="lg:hidden flex items-center h-14 px-4 border-b border-white/[0.05] shrink-0 bg-[#080808]">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors mr-3"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <div className="relative w-6 h-6 flex items-center justify-center shrink-0">
+              <div className="absolute inset-0 bg-amber-500 rounded-md rotate-45" />
+              <Zap className="relative z-10 w-3.5 h-3.5 text-black" strokeWidth={2.5} />
+            </div>
+            <span className="font-display font-bold text-white text-sm">Kairo</span>
+          </div>
+          <Link href="/settings" className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.06] transition-colors">
+            <Settings className="w-4 h-4" />
+          </Link>
+        </div>
+
         {messages.length === 0 ? (
           /* ── Empty state ── */
-          <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <div className="flex-1 flex flex-col items-center justify-center px-4 pt-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

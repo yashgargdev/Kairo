@@ -432,7 +432,7 @@ export function SettingsInterface() {
   return (
     <div className="min-h-screen bg-[#080808]">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 bg-[#080808]/90 backdrop-blur-xl border-b border-white/[0.05] h-14 flex items-center px-6">
+      <header className="sticky top-0 z-40 bg-[#080808]/90 backdrop-blur-xl border-b border-white/[0.05] h-14 flex items-center px-4 sm:px-6">
         <Link
           href="/chat"
           className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mr-6"
@@ -459,7 +459,7 @@ export function SettingsInterface() {
         )}
       </header>
 
-      <div className="max-w-7xl mx-auto px-8 flex gap-10 h-[calc(100vh-3.5rem)] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 flex gap-10 lg:h-[calc(100vh-3.5rem)] lg:overflow-hidden">
 
           {/* ── Sidebar ── */}
           <aside className="hidden lg:flex flex-col w-56 shrink-0 pt-10 pb-10">
@@ -490,7 +490,7 @@ export function SettingsInterface() {
           </aside>
 
           {/* ── Scrollable content ── */}
-          <div className="flex-1 min-w-0 overflow-y-auto py-10 pr-2">
+          <div className="flex-1 min-w-0 overflow-y-auto py-6 lg:py-10 lg:pr-2">
             <div className="lg:hidden mb-6">
               <h1 className="text-2xl font-display font-black text-white mb-1">Settings</h1>
               <p className="text-sm text-zinc-500 mb-4">

@@ -42,7 +42,7 @@ export function ModelsSection() {
           <span className="inline-block text-xs font-mono text-amber-400 tracking-[0.25em] uppercase mb-4 px-3 py-1 bg-amber-500/10 rounded-full border border-amber-500/20">
             Supported Models
           </span>
-          <h2 className="text-4xl md:text-5xl font-display font-black text-white leading-tight tracking-tight mt-4">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-display font-black text-white leading-tight tracking-tight mt-4">
             One interface,
             <br />
             <span className="text-zinc-500">every frontier model.</span>

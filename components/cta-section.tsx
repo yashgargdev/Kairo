@@ -19,7 +19,7 @@ export function CTASection() {
           initial={{ opacity: 0, y: 30 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="relative p-12 md:p-16 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] overflow-hidden"
+          className="relative p-6 sm:p-10 md:p-16 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] overflow-hidden"
         >
           {/* Decorative top line */}
           <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
@@ -37,7 +37,7 @@ export function CTASection() {
             initial={{ opacity: 0, y: 20 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.15, duration: 0.6 }}
-            className="text-4xl md:text-6xl font-display font-black text-white leading-tight tracking-tight mb-6"
+            className="text-3xl sm:text-4xl md:text-6xl font-display font-black text-white leading-tight tracking-tight mb-6"
           >
             Ready to take control
             <br />
@@ -48,7 +48,7 @@ export function CTASection() {
             initial={{ opacity: 0, y: 15 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.25, duration: 0.6 }}
-            className="text-zinc-400 text-lg mb-10 max-w-xl mx-auto leading-relaxed"
+            className="text-zinc-400 text-base sm:text-lg mb-8 max-w-xl mx-auto leading-relaxed"
           >
             No sign-up. No subscription. Just paste your API key and start chatting.
           </motion.p>

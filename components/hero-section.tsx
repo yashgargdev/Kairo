@@ -68,13 +68,13 @@ export function HeroSection() {
           <div className="absolute top-0 left-0 w-32 h-32 border-t border-l border-amber-500/20 rounded-tl-2xl" />
           <div className="absolute bottom-0 right-0 w-32 h-32 border-b border-r border-amber-500/20 rounded-br-2xl" />
 
-          {/* Robot — absolutely positioned, bleeds over left content */}
+          {/* Robot — hidden on mobile to avoid overlap */}
           <motion.div
             initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 1.1, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
             ref={splineContainerRef}
-            className="absolute inset-y-0 right-0 w-[70%] z-0"
+            className="hidden md:block absolute inset-y-0 right-0 w-[70%] z-0"
           >
             {/* Left fade so robot blends into the text area naturally */}
             <div className="absolute inset-y-0 left-0 w-[45%] bg-gradient-to-r from-[#0d0d0d] via-[#0d0d0d]/60 to-transparent z-10 pointer-events-none" />
@@ -86,8 +86,8 @@ export function HeroSection() {
             />
           </motion.div>
 
-          {/* Left content — sits on top of robot via z-10 */}
-          <div className="relative z-10 h-full min-h-[85vh] flex flex-col justify-center p-8 lg:p-14 max-w-[640px]">
+          {/* Content */}
+          <div className="relative z-10 h-full min-h-[85vh] flex flex-col justify-center p-6 sm:p-8 lg:p-14 w-full md:max-w-[640px]">
 
             {/* Badge */}
             <motion.div
@@ -107,7 +107,7 @@ export function HeroSection() {
               variants={fadeUp}
               initial="hidden"
               animate="visible"
-              className="text-5xl md:text-6xl xl:text-7xl font-display font-black leading-[0.92] tracking-tight text-white mb-6"
+              className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-display font-black leading-[0.92] tracking-tight text-white mb-6"
             >
               Chat with
               <br />
