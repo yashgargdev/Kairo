@@ -63,7 +63,7 @@ const PROVIDERS: {
     prefix: 'AIza',
     models: ['Gemini 3.1 Pro', 'Gemini 3.1 Flash-Lite', 'Gemini 2.5 Pro'],
     description: 'Use Gemini models with 1M token context windows.',
-    testModelId: 'gemini-2.5-pro',
+    testModelId: 'gemini-3.1-flash-lite',
   },
   {
     id: 'groq',

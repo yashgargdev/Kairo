@@ -151,8 +151,7 @@ async function proxyGoogle(
   model: string,
   messages: { role: string; content: string }[]
 ): Promise<ReadableStream<Uint8Array>> {
-  const geminiModel = model.replace('gemini-', 'gemini-').replace('gemini-flash', 'gemini-1.5-flash')
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:streamGenerateContent?alt=sse&key=${apiKey}`
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`
 
   const contents = messages
     .filter(m => m.role !== 'system')
