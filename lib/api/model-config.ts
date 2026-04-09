@@ -22,27 +22,27 @@ export interface ModelDef {
 export const MODELS: ModelDef[] = [
   // ── Google ────────────────────────────────────────────────────────────────
   {
-    id: 'gemini-3.1-pro', apiId: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro',
+    id: 'gemini-2.5-pro', apiId: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro',
     provider: 'google', group: 'Google',
-    description: 'Complex reasoning, heavy agentic workflows',
-    reasoning: 'high', speed: 'medium', input: ['Text', 'Image'], output: ['Text'],
+    description: 'Best reasoning, complex agentic workflows',
+    reasoning: 'highest', speed: 'medium', input: ['Text', 'Image'], output: ['Text'],
   },
   {
-    id: 'gemini-3.1-flash-lite', apiId: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite',
+    id: 'gemini-2.5-flash', apiId: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash',
     provider: 'google', group: 'Google',
-    description: 'High-volume tasks, ultimate cost efficiency',
-    reasoning: 'medium', speed: 'fastest', input: ['Text', 'Image'], output: ['Text'],
+    description: 'Fast multimodal tasks, best price/performance',
+    reasoning: 'high', speed: 'fast', input: ['Text', 'Image'], output: ['Text'],
   },
   {
-    id: 'gemini-3-flash', apiId: 'gemini-3-flash', label: 'Gemini 3 Flash',
+    id: 'gemini-2.0-flash', apiId: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash',
     provider: 'google', group: 'Google',
-    description: 'High-speed multimodal tasks',
+    description: 'High-speed multimodal, stable production',
     reasoning: 'medium', speed: 'fast', input: ['Text', 'Image'], output: ['Text'],
   },
   {
-    id: 'gemini-2.5-pro', apiId: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro',
+    id: 'gemini-1.5-pro', apiId: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro',
     provider: 'google', group: 'Google',
-    description: 'Stable legacy production environments',
+    description: '2M context window, long document analysis',
     reasoning: 'high', speed: 'medium', input: ['Text', 'Image'], output: ['Text'],
   },
 
