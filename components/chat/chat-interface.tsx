@@ -191,13 +191,13 @@ export function ChatInterface() {
     })
   }, [store, keys, settings, isResponding])
 
-  const handleSend = useCallback(async (text: string, modelId: string, tools: string[] = []) => {
+  const handleSend = useCallback(async (text: string, modelId: string, tools: string[] = [], hint?: string) => {
     if (isResponding) return
 
     let convId = store.currentId
     if (!convId) convId = store.createConversation(modelId)
 
-    // Add user message
+    // Store clean text (no hint) so the user bubble stays clean
     store.addMessage(convId, { role: 'user', content: text, timestamp: new Date() })
 
     // ── Image generation path ──────────────────────────────────────────────────
@@ -231,7 +231,9 @@ export function ChatInterface() {
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }))
-    history.push({ role: 'user', content: text })
+    // Append hint to the API turn only — never stored in the chat store
+    const apiText = hint ? `${text}\n\n[${hint}]` : text
+    history.push({ role: 'user', content: apiText })
 
     // Add streaming assistant placeholder
     const aiMsgId = store.addMessage(convId, {

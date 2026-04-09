@@ -11,6 +11,43 @@ interface MermaidDiagramProps {
 }
 
 let idCounter = 0
+let mermaidInitialized = false
+
+async function getMermaid() {
+  const mermaid = (await import('mermaid')).default
+  if (!mermaidInitialized) {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#f59e0b',
+        primaryTextColor: '#e4e4e7',
+        primaryBorderColor: '#d97706',
+        lineColor: '#52525b',
+        background: '#0d0d0d',
+        mainBkg: '#18181b',
+        nodeBorder: '#3f3f46',
+        clusterBkg: '#18181b',
+        titleColor: '#e4e4e7',
+        edgeLabelBackground: '#18181b',
+        attributeBackgroundColorOdd: '#18181b',
+        attributeBackgroundColorEven: '#27272a',
+        fontFamily: 'IBM Plex Mono, monospace',
+      },
+    })
+    mermaidInitialized = true
+  }
+  return mermaid
+}
+
+// Valid diagram type prefixes
+const VALID_TYPES = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram',
+  'erDiagram', 'gantt', 'pie', 'gitGraph', 'mindmap', 'timeline', 'quadrantChart', 'xychart']
+
+function isValidMermaid(code: string): boolean {
+  const trimmed = code.trim().toLowerCase()
+  return VALID_TYPES.some(t => trimmed.startsWith(t.toLowerCase()))
+}
 
 export function MermaidDiagram({ code, title, className }: MermaidDiagramProps) {
   const [svg, setSvg] = useState<string>('')
@@ -21,38 +58,30 @@ export function MermaidDiagram({ code, title, className }: MermaidDiagramProps) 
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
+    setSvg('')
     setError('')
+    setLoading(true)
+
+    const trimmed = code.trim()
+
+    if (!trimmed || !isValidMermaid(trimmed)) {
+      setError('Invalid or incomplete diagram syntax.')
+      setLoading(false)
+      return
+    }
 
     const render = async () => {
       try {
-        const mermaid = (await import('mermaid')).default
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: 'dark',
-          themeVariables: {
-            primaryColor: '#f59e0b',
-            primaryTextColor: '#e4e4e7',
-            primaryBorderColor: '#d97706',
-            lineColor: '#52525b',
-            background: '#0d0d0d',
-            mainBkg: '#18181b',
-            nodeBorder: '#3f3f46',
-            clusterBkg: '#18181b',
-            titleColor: '#e4e4e7',
-            edgeLabelBackground: '#18181b',
-            attributeBackgroundColorOdd: '#18181b',
-            attributeBackgroundColorEven: '#27272a',
-            fontFamily: 'IBM Plex Mono, monospace',
-          },
-        })
-
-        // Ensure unique ID each render
-        const uid = `${idRef.current}-${Date.now()}`
-        const { svg: rendered } = await mermaid.render(uid, code.trim())
+        const mermaid = await getMermaid()
+        const uid = `mermaid-${idRef.current}-${Date.now()}`
+        const { svg: rendered } = await mermaid.render(uid, trimmed)
         if (!cancelled) setSvg(rendered)
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to render diagram')
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : 'Failed to render diagram'
+          // Strip verbose mermaid stack noise
+          setError(msg.split('\n')[0])
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }

@@ -163,7 +163,7 @@ interface Attachment {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 interface AIInputProps {
-  onSend: (message: string, model: string, tools: string[]) => void;
+  onSend: (message: string, model: string, tools: string[], hint?: string) => void;
   disabled?: boolean;
   className?: string;
   defaultModelId?: string;
@@ -284,8 +284,8 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
     const validAttachments = attachments.filter(a => a.status === 'text' && a.content)
     if ((!hasText && !validAttachments.length) || disabled) return
 
-    // Append tool hints
-    const hints = activeTools
+    // Collect tool hints (sent to API only, NOT stored in user message)
+    const hintStr = activeTools
       .map(id => TOOLS.find(t => t.id === id)?.hint)
       .filter(Boolean)
       .join(' ')
@@ -298,9 +298,9 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
 
     let message = hasText ? value.trim() : ''
     if (fileContext) message = message ? `${message}\n\n${fileContext}` : fileContext
-    if (hints) message = `${message}\n\n[${hints}]`
+    // hints are NOT appended to message — passed separately so the UI bubble stays clean
 
-    onSend(message, selectedModel.id, activeTools)
+    onSend(message, selectedModel.id, activeTools, hintStr)
     setValue("")
     setActiveTools([])
     setAttachments([])
