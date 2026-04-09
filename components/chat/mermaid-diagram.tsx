@@ -18,6 +18,7 @@ async function getMermaid() {
   if (!mermaidInitialized) {
     mermaid.initialize({
       startOnLoad: false,
+      suppressErrors: true,
       theme: 'dark',
       themeVariables: {
         primaryColor: '#f59e0b',
@@ -73,13 +74,22 @@ export function MermaidDiagram({ code, title, className }: MermaidDiagramProps) 
     const render = async () => {
       try {
         const mermaid = await getMermaid()
+
+        // parse() throws on invalid syntax — catch before render() touches the DOM
+        await mermaid.parse(trimmed)
+
         const uid = `mermaid-${idRef.current}-${Date.now()}`
         const { svg: rendered } = await mermaid.render(uid, trimmed)
-        if (!cancelled) setSvg(rendered)
+
+        // Sanity-check: mermaid sometimes returns an error SVG silently
+        if (rendered.includes('Syntax error') || rendered.includes('mermaid-error')) {
+          if (!cancelled) setError('Diagram syntax error — check the generated code.')
+        } else {
+          if (!cancelled) setSvg(rendered)
+        }
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : 'Failed to render diagram'
-          // Strip verbose mermaid stack noise
           setError(msg.split('\n')[0])
         }
       } finally {
