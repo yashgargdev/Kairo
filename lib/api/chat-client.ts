@@ -22,16 +22,26 @@ export async function streamChat(
   callbacks: StreamCallbacks
 ): Promise<void> {
   let res: Response
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 280_000) // 280s — just under Vercel's 300s limit
   try {
     res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, model, provider }),
+      signal: controller.signal,
     })
-  } catch {
-    callbacks.onError('Network error — could not reach the server.')
+  } catch (e) {
+    clearTimeout(timeout)
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      callbacks.onError('Request timed out — the model took too long to respond. Try a shorter message or a faster model.')
+    } else {
+      callbacks.onError('Network error — could not reach the server.')
+    }
     return
   }
+
+  clearTimeout(timeout)
 
   // Non-streaming error (401, 400, 500 etc.)
   if (!res.ok || res.headers.get('Content-Type')?.includes('application/json')) {
