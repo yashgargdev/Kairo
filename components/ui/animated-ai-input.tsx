@@ -193,6 +193,11 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
     if (model) { setSelectedModel(model); lastChatModelRef.current = model; }
   }, [defaultModelId]);
 
+  // Auto-focus textarea so user can type immediately without clicking
+  useEffect(() => {
+    if (!disabled) textareaRef.current?.focus()
+  }, [disabled, textareaRef]);
+
   const toggleTool = (id: string) => {
     setActiveTools(prev => {
       const isActive = prev.includes(id)
@@ -212,6 +217,8 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
       }
       return next
     })
+    // Return focus to textarea so Enter sends the message, not toggles the button
+    setTimeout(() => textareaRef.current?.focus(), 0)
   }
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
