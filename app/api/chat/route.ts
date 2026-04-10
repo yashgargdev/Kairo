@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import { getApiId } from '@/lib/api/model-config'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
+export const maxDuration = 60
 
 // Normalised SSE format we stream to the client:
 //   data: {"delta":"text"}\n\n
