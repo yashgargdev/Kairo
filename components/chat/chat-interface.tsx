@@ -203,6 +203,11 @@ export function ChatInterface() {
     let convId = store.currentId
     if (!convId) convId = store.createConversation(modelId)
 
+    // Capture existing messages BEFORE adding the new one
+    // (store.currentConversation is the pre-render value — safe to read here)
+    const priorMessages = (store.currentConversation?.messages ?? [])
+      .filter(m => !m.noKey && !m.errorMessage && (m.content.trim() !== '' || m.images?.length))
+
     // Store clean text + images in chat store (shown in user bubble)
     store.addMessage(convId, {
       role: 'user',
@@ -235,18 +240,12 @@ export function ChatInterface() {
 
     setIsResponding(true)
 
-    // Build message history — exclude the message we just added (last in store)
-    // so we can push it with the hint without duplicating it
-    const allStored = (store.currentConversation?.messages ?? [])
-      .filter(m => !m.noKey && !m.errorMessage && (m.content.trim() !== '' || m.images?.length))
-    const history: ChatMessage[] = allStored
-      .slice(0, -1)   // drop the last entry (the user msg we just stored)
-      .map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        ...(m.images?.length ? { images: m.images } : {}),
-      }))
-    // Push current message with hint appended (hint never stored in UI)
+    // Build history from prior messages + append current message with hint
+    const history: ChatMessage[] = priorMessages.map(m => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+      ...(m.images?.length ? { images: m.images } : {}),
+    }))
     const apiText = hint ? `${text}\n\n[${hint}]` : text
     history.push({ role: 'user', content: apiText, ...(images?.length ? { images } : {}) })
 
