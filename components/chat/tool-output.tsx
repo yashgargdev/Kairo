@@ -35,7 +35,41 @@ export function ToolOutput({ result }: ToolOutputProps) {
   )
 }
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(',')
+  const mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/png'
+  const bytes = atob(base64)
+  const arr = new Uint8Array(bytes.length)
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i)
+  return new Blob([arr], { type: mimeType })
+}
+
 function ImageOutput({ result }: ToolOutputProps) {
+  const handleOpen = () => {
+    if (!result.imageUrl) return
+    if (result.imageUrl.startsWith('data:')) {
+      // data: URLs can't be opened in new tabs — convert to blob URL first
+      const blob = dataUrlToBlob(result.imageUrl)
+      const blobUrl = URL.createObjectURL(blob)
+      window.open(blobUrl, '_blank')
+    } else {
+      window.open(result.imageUrl, '_blank')
+    }
+  }
+
+  const handleDownload = () => {
+    if (!result.imageUrl) return
+    const a = document.createElement('a')
+    if (result.imageUrl.startsWith('data:')) {
+      const blob = dataUrlToBlob(result.imageUrl)
+      a.href = URL.createObjectURL(blob)
+    } else {
+      a.href = result.imageUrl
+    }
+    a.download = `kairo-image-${Date.now()}.png`
+    a.click()
+  }
+
   return (
     <div className="rounded-xl border border-pink-500/15 bg-[#0d0d0d] overflow-hidden">
       <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.06]">
@@ -46,15 +80,22 @@ function ImageOutput({ result }: ToolOutputProps) {
           <span className="text-xs font-mono text-zinc-300 font-medium">{result.title}</span>
         </div>
         {result.imageUrl && (
-          <a
-            href={result.imageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/[0.05]"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Open
-          </a>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleDownload}
+              className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/[0.05]"
+            >
+              <Download className="w-3 h-3" />
+              Save
+            </button>
+            <button
+              onClick={handleOpen}
+              className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-white/[0.05]"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Open
+            </button>
+          </div>
         )}
       </div>
       <div className="p-3">
