@@ -22,21 +22,21 @@ export interface ModelDef {
 export const MODELS: ModelDef[] = [
   // ── Google ────────────────────────────────────────────────────────────────
   {
-    id: 'gemini-2.5-pro', apiId: 'gemini-2.5-pro-preview-06-05', label: 'Gemini 2.5 Pro',
+    id: 'gemini-2.5-pro', apiId: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro',
     provider: 'google', group: 'Google',
-    description: 'Best reasoning, complex agentic workflows',
+    description: 'Most advanced model, complex agentic workflows',
     reasoning: 'highest', speed: 'medium', input: ['Text', 'Image'], output: ['Text'],
   },
   {
-    id: 'gemini-2.5-flash', apiId: 'gemini-2.5-flash-preview-05-20', label: 'Gemini 2.5 Flash',
+    id: 'gemini-2.5-flash', apiId: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash',
     provider: 'google', group: 'Google',
-    description: 'Fast multimodal tasks, best price/performance',
+    description: 'Best price-performance, fast multimodal tasks',
     reasoning: 'high', speed: 'fast', input: ['Text', 'Image'], output: ['Text'],
   },
   {
-    id: 'gemini-2.5-flash-lite', apiId: 'gemini-2.5-flash-lite-preview-06-17', label: 'Gemini 2.5 Flash-Lite',
+    id: 'gemini-2.5-flash-lite', apiId: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite',
     provider: 'google', group: 'Google',
-    description: 'Ultra-fast, high-volume tasks, lowest cost',
+    description: 'Fastest and most budget-friendly option',
     reasoning: 'medium', speed: 'fastest', input: ['Text', 'Image'], output: ['Text'],
   },
 
