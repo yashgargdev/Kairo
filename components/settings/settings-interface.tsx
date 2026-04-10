@@ -137,31 +137,40 @@ type TestStatus = 'idle' | 'testing' | 'ok' | 'error'
 
 function ProviderKeyRow({ provider }: { provider: typeof PROVIDERS[number] }) {
   const { keys, saveKey, deleteKey } = useApiKeys()
-  const [draft, setDraft] = useState(keys[provider.id] || '')
+  const [draft, setDraft] = useState('')  // always starts empty — can't read back from httpOnly cookie
   const [visible, setVisible] = useState(false)
   const [saved, setSaved] = useState(false)
   const [testStatus, setTestStatus] = useState<TestStatus>('idle')
 
-  const currentKey = keys[provider.id]
-  const hasKey = !!currentKey
-  const isDirty = draft !== currentKey
+  const hasKey = keys[provider.id]  // boolean — true if a cookie exists for this provider
+  const isDirty = draft.trim() !== ''  // any non-empty input is a new unsaved key
 
-  const handleSave = useCallback(() => {
-    saveKey(provider.id, draft.trim())
+  const handleSave = useCallback(async () => {
+    if (!draft.trim()) return
+    await saveKey(provider.id, draft.trim())
+    setDraft('')
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }, [draft, provider.id, saveKey])
 
-  const handleDelete = useCallback(() => {
-    deleteKey(provider.id)
+  const handleDelete = useCallback(async () => {
+    await deleteKey(provider.id)
     setDraft('')
     setTestStatus('idle')
   }, [provider.id, deleteKey])
 
   const handleTest = useCallback(async () => {
-    const key = draft.trim() || currentKey
-    if (!key) return
+    if (!hasKey && !draft.trim()) return
     setTestStatus('testing')
+
+    // If there's an unsaved draft, save it first so the cookie is set before testing
+    if (draft.trim()) {
+      await saveKey(provider.id, draft.trim())
+      setDraft('')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -170,7 +179,6 @@ function ProviderKeyRow({ provider }: { provider: typeof PROVIDERS[number] }) {
           messages: [{ role: 'user', content: 'Hi' }],
           model: provider.testModelId,
           provider: provider.id,
-          apiKey: key,
           maxTokens: 10,
         }),
       })
@@ -207,7 +215,7 @@ function ProviderKeyRow({ provider }: { provider: typeof PROVIDERS[number] }) {
       setTestStatus('error')
     }
     setTimeout(() => setTestStatus('idle'), 4000)
-  }, [draft, currentKey, provider])
+  }, [draft, hasKey, provider, saveKey])
 
   return (
     <div className={cn(
@@ -279,10 +287,10 @@ function ProviderKeyRow({ provider }: { provider: typeof PROVIDERS[number] }) {
           {/* Save */}
           <button
             onClick={handleSave}
-            disabled={!draft.trim() || !isDirty}
+            disabled={!isDirty}
             className={cn(
               "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex-1 justify-center",
-              draft.trim() && isDirty
+              isDirty
                 ? "bg-amber-500 hover:bg-amber-400 text-black"
                 : "bg-white/[0.04] text-zinc-600 cursor-not-allowed"
             )}
@@ -532,10 +540,10 @@ export function SettingsInterface() {
               <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-500/5 border border-blue-500/15">
                 <Shield className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs text-blue-300 font-medium">End-to-end private</p>
+                  <p className="text-xs text-blue-300 font-medium">Stored in httpOnly cookies</p>
                   <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                    Keys are saved to <code className="text-zinc-400 font-mono">localStorage</code> in your browser only.
-                    They are never sent to Kairo's servers (there are none). Clearing browser data removes all keys.
+                    Keys are stored in <code className="text-zinc-400 font-mono">httpOnly</code> cookies — inaccessible to JavaScript and never visible in the Network tab after saving.
+                    Clearing browser cookies removes all keys.
                   </p>
                 </div>
               </div>
@@ -639,7 +647,7 @@ export function SettingsInterface() {
                   color: 'text-amber-400',
                   bg: 'bg-amber-500/5 border-amber-500/15',
                   title: 'API Keys',
-                  body: 'Your API keys are stored exclusively in your browser\'s localStorage. They are never transmitted to any server operated by Kairo. Each AI provider receives your key only when you make a direct request from your browser to their API.',
+                  body: 'Your API keys are stored in httpOnly cookies — inaccessible to JavaScript and invisible in the browser Network tab. The Next.js API proxy reads the key server-side to call AI providers. No key value is ever returned to client-side code.',
                 },
                 {
                   icon: Brain,
@@ -653,7 +661,7 @@ export function SettingsInterface() {
                   color: 'text-emerald-400',
                   bg: 'bg-emerald-500/5 border-emerald-500/15',
                   title: 'No Analytics',
-                  body: 'Kairo contains zero analytics, tracking pixels, or telemetry. There is no Kairo server receiving requests. The app is entirely client-side — open the network tab in DevTools to verify.',
+                  body: 'Kairo contains zero analytics, tracking pixels, or telemetry. The only server requests are the Next.js API proxy routes used to call AI providers — no usage data is logged or stored.',
                 },
                 {
                   icon: Zap,

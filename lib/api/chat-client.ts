@@ -19,7 +19,6 @@ export async function streamChat(
   messages: ChatMessage[],
   model: string,
   provider: string,
-  apiKey: string,
   callbacks: StreamCallbacks
 ): Promise<void> {
   let res: Response
@@ -27,7 +26,7 @@ export async function streamChat(
     res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, model, provider, apiKey }),
+      body: JSON.stringify({ messages, model, provider }),
     })
   } catch {
     callbacks.onError('Network error — could not reach the server.')

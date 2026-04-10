@@ -65,9 +65,9 @@ export function ChatInterface() {
   // ── Image generation ─────────────────────────────────────────────────────────
   const handleImageGen = useCallback(async (prompt: string, modelId: string, convId: string) => {
     const provider = getProvider(modelId)
-    const apiKey = keys[provider]
+    const hasKey = keys[provider]
 
-    if (!apiKey) {
+    if (!hasKey) {
       store.addMessage(convId, { role: 'assistant', content: '', model: modelId, timestamp: new Date(), noKey: true, noKeyProvider: provider })
       return
     }
@@ -85,7 +85,7 @@ export function ChatInterface() {
       const res = await fetch('/api/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, modelId, apiKey }),
+        body: JSON.stringify({ prompt, modelId }),
       })
       const data = await res.json()
 
@@ -131,9 +131,9 @@ export function ChatInterface() {
 
     // Re-run the API call with the existing history
     const provider = getProvider(modelId)
-    const apiKey = keys[provider]
+    const hasKey = keys[provider]
 
-    if (!apiKey) {
+    if (!hasKey) {
       store.addMessage(convId, {
         role: 'assistant', content: '', model: modelId,
         timestamp: new Date(), noKey: true, noKeyProvider: provider,
@@ -157,7 +157,7 @@ export function ChatInterface() {
     const thinkStepId = Math.random().toString(36).slice(2)
     const streamingEnabled = settings.streamingEnabled
 
-    await streamChat(history, modelId, provider, apiKey, {
+    await streamChat(history, modelId, provider, {
       onDelta(chunk) {
         accumulated += chunk
         if (!streamingEnabled) return
@@ -223,10 +223,10 @@ export function ChatInterface() {
     }
 
     const provider = getProvider(modelId)
-    const apiKey = keys[provider]
+    const hasKey = keys[provider]
 
     // No key? Show error message bubble instead of calling API
-    if (!apiKey) {
+    if (!hasKey) {
       store.addMessage(convId, {
         role: 'assistant',
         content: '',
@@ -262,7 +262,7 @@ export function ChatInterface() {
     const thinkStepId = Math.random().toString(36).slice(2)
     const streamingEnabled = settings.streamingEnabled
 
-    await streamChat(history, modelId, provider, apiKey, {
+    await streamChat(history, modelId, provider, {
       onDelta(chunk) {
         accumulated += chunk
         if (!streamingEnabled) return  // buffer — update only on done

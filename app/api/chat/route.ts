@@ -259,17 +259,19 @@ async function proxyGoogle(
 // ── Route handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { messages, model, apiKey, provider, maxTokens } = await req.json() as {
+    const { messages, model, provider, maxTokens } = await req.json() as {
       messages: ApiMsg[]
       model: string
-      apiKey: string
       provider: string
       maxTokens?: number
     }
 
-    if (!apiKey?.trim()) {
+    // Read API key from httpOnly cookie — never exposed in request bodies
+    const apiKey = req.cookies.get(`kairo_key_${provider}`)?.value ?? ''
+
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: 'No API key provided. Add your key in Settings.' }),
+        JSON.stringify({ error: 'No API key found. Add your key in Settings.' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
       )
     }

@@ -5,13 +5,20 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  const { prompt, modelId, apiKey } = await req.json()
+  const { prompt, modelId } = await req.json()
 
-  if (!prompt || !modelId || !apiKey) {
-    return Response.json({ error: 'Missing required fields (prompt, modelId, apiKey).' }, { status: 400 })
+  if (!prompt || !modelId) {
+    return Response.json({ error: 'Missing required fields (prompt, modelId).' }, { status: 400 })
   }
 
   const provider = getProvider(modelId)
+
+  // Read API key from httpOnly cookie — never exposed in request bodies
+  const apiKey = req.cookies.get(`kairo_key_${provider}`)?.value ?? ''
+
+  if (!apiKey) {
+    return Response.json({ error: 'No API key found. Add your key in Settings.' }, { status: 401 })
+  }
   const apiId    = getApiId(modelId)
 
   // ── OpenAI (DALL-E 3 / GPT Image) ──────────────────────────────────────────
