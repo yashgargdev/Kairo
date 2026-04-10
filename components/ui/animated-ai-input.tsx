@@ -407,18 +407,36 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
             )}
           </AnimatePresence>
 
+          {/* Generating indicator */}
+          {disabled && (
+            <div className="flex items-center gap-2.5 px-4 py-3">
+              <div className="flex items-center gap-1">
+                {[0, 1, 2].map(i => (
+                  <motion.div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-amber-500 rounded-full"
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.18 }}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-zinc-500">Generating response…</span>
+            </div>
+          )}
+
           {/* Textarea */}
-          <div className="overflow-y-auto" style={{ maxHeight: "280px" }}>
-            <Textarea
-              value={value}
-              placeholder="Ask anything… (Shift+Enter for new line)"
-              className="w-full rounded-xl rounded-b-none px-4 py-3 bg-transparent border-none text-white placeholder:text-zinc-600 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed"
-              ref={textareaRef}
-              onKeyDown={handleKeyDown}
-              onChange={e => { setValue(e.target.value); adjustHeight(); }}
-              disabled={disabled}
-            />
-          </div>
+          {!disabled && (
+            <div className="overflow-y-auto" style={{ maxHeight: "280px" }}>
+              <Textarea
+                value={value}
+                placeholder="Ask anything… (Shift+Enter for new line)"
+                className="w-full rounded-xl rounded-b-none px-4 py-3 bg-transparent border-none text-white placeholder:text-zinc-600 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm leading-relaxed"
+                ref={textareaRef}
+                onKeyDown={handleKeyDown}
+                onChange={e => { setValue(e.target.value); adjustHeight(); }}
+              />
+            </div>
+          )}
 
           {/* Bottom toolbar */}
           <div className="flex items-center px-2 pb-2 pt-1 gap-1">
@@ -521,10 +539,10 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
             <button
               type="button"
               onClick={handleSend}
-              disabled={(!value.trim() && !attachments.some(a => a.status === 'text' && a.content)) || attachments.some(a => a.status === 'extracting') || disabled}
+              disabled={disabled || (!value.trim() && !attachments.some(a => a.status !== 'error' && a.content)) || attachments.some(a => a.status === 'extracting')}
               className={cn(
                 "ml-auto flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150",
-                (value.trim() || attachments.some(a => a.status === 'text' && a.content)) && !attachments.some(a => a.status === 'extracting') && !disabled
+                !disabled && (value.trim() || attachments.some(a => a.status !== 'error' && a.content)) && !attachments.some(a => a.status === 'extracting')
                   ? "bg-amber-500 hover:bg-amber-400 text-black"
                   : "bg-white/[0.06] text-zinc-600 cursor-not-allowed"
               )}
