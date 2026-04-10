@@ -61,9 +61,9 @@ const PROVIDERS: {
     docsUrl: 'https://ai.google.dev/docs',
     keysUrl: 'https://aistudio.google.com/app/apikey',
     prefix: 'AIza',
-    models: ['Gemini 2.5 Pro', 'Gemini 2.5 Flash', 'Gemini 2.0 Flash'],
+    models: ['Gemini 2.5 Pro', 'Gemini 2.5 Flash', 'Gemini 2.5 Flash-Lite'],
     description: 'Use Gemini models with 1M token context windows.',
-    testModelId: 'gemini-2.0-flash',
+    testModelId: 'gemini-2.5-flash-lite',
   },
   {
     id: 'groq',
