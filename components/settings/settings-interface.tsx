@@ -254,15 +254,15 @@ function ProviderKeyRow({ provider }: { provider: typeof PROVIDERS[number] }) {
         ))}
       </div>
 
-      {/* Key input */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      {/* Key input — input full width, buttons below on mobile */}
+      <div className="flex flex-col gap-2">
+        <div className="relative">
           <input
             type={visible ? 'text' : 'password'}
             value={draft}
             onChange={e => setDraft(e.target.value)}
             placeholder={`${provider.prefix}••••••••••••••••••••`}
-            className="w-full bg-black/30 border border-white/[0.08] rounded-lg px-3 py-2 pr-10 text-sm font-mono text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:border-white/20 transition-colors"
+            className="w-full bg-black/30 border border-white/[0.08] rounded-lg px-3 py-2.5 pr-10 text-sm font-mono text-zinc-300 placeholder:text-zinc-700 focus:outline-none focus:border-white/20 transition-colors"
             spellCheck={false}
             autoComplete="off"
           />
@@ -275,53 +275,55 @@ function ProviderKeyRow({ provider }: { provider: typeof PROVIDERS[number] }) {
           </button>
         </div>
 
-        {/* Save */}
-        <button
-          onClick={handleSave}
-          disabled={!draft.trim() || !isDirty}
-          className={cn(
-            "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all",
-            draft.trim() && isDirty
-              ? "bg-amber-500 hover:bg-amber-400 text-black"
-              : "bg-white/[0.04] text-zinc-600 cursor-not-allowed"
-          )}
-        >
-          {saved ? <Check className="w-3.5 h-3.5" /> : <Key className="w-3.5 h-3.5" />}
-          {saved ? 'Saved' : 'Save'}
-        </button>
-
-        {/* Test */}
-        {(hasKey || draft.trim()) && (
+        <div className="flex gap-2">
+          {/* Save */}
           <button
-            onClick={handleTest}
-            disabled={testStatus === 'testing'}
+            onClick={handleSave}
+            disabled={!draft.trim() || !isDirty}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border",
-              testStatus === 'ok' ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10" :
-              testStatus === 'error' ? "border-red-500/30 text-red-400 bg-red-500/10" :
-              "border-white/[0.08] text-zinc-400 hover:bg-white/[0.05]"
+              "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex-1 justify-center",
+              draft.trim() && isDirty
+                ? "bg-amber-500 hover:bg-amber-400 text-black"
+                : "bg-white/[0.04] text-zinc-600 cursor-not-allowed"
             )}
           >
-            {testStatus === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
-             testStatus === 'ok' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
-             testStatus === 'error' ? <AlertCircle className="w-3.5 h-3.5" /> :
-             <Zap className="w-3.5 h-3.5" />}
-            {testStatus === 'testing' ? 'Testing…' :
-             testStatus === 'ok' ? 'Connected' :
-             testStatus === 'error' ? 'Failed' : 'Test'}
+            {saved ? <Check className="w-3.5 h-3.5" /> : <Key className="w-3.5 h-3.5" />}
+            {saved ? 'Saved' : 'Save'}
           </button>
-        )}
 
-        {/* Delete */}
-        {hasKey && (
-          <button
-            onClick={handleDelete}
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-white/[0.06] text-zinc-600 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all"
-            title="Remove key"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
+          {/* Test */}
+          {(hasKey || draft.trim()) && (
+            <button
+              onClick={handleTest}
+              disabled={testStatus === 'testing'}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border flex-1 justify-center",
+                testStatus === 'ok' ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10" :
+                testStatus === 'error' ? "border-red-500/30 text-red-400 bg-red-500/10" :
+                "border-white/[0.08] text-zinc-400 hover:bg-white/[0.05]"
+              )}
+            >
+              {testStatus === 'testing' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
+               testStatus === 'ok' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
+               testStatus === 'error' ? <AlertCircle className="w-3.5 h-3.5" /> :
+               <Zap className="w-3.5 h-3.5" />}
+              {testStatus === 'testing' ? 'Testing…' :
+               testStatus === 'ok' ? 'Connected' :
+               testStatus === 'error' ? 'Failed' : 'Test'}
+            </button>
+          )}
+
+          {/* Delete */}
+          {hasKey && (
+            <button
+              onClick={handleDelete}
+              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-lg border border-white/[0.06] text-zinc-600 hover:text-red-400 hover:border-red-500/20 hover:bg-red-500/5 transition-all"
+              title="Remove key"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )
