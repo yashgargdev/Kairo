@@ -27,10 +27,10 @@ function errorStream(message: string) {
 type MsgImage = { mimeType: string; data: string }
 type ApiMsg = { role: string; content: string; images?: MsgImage[] }
 
-// Convert messages to OpenAI multimodal format
-function toOpenAIMessages(messages: ApiMsg[]) {
+// Convert to OpenAI multimodal format (vision-capable providers: openai, openrouter)
+function toOpenAIVisionMessages(messages: ApiMsg[]) {
   return messages.map(m => {
-    if (!m.images?.length) return { role: m.role, content: m.content }
+    if (!m.images?.length) return { role: m.role, content: m.content || ' ' }
     const content: unknown[] = []
     if (m.content) content.push({ type: 'text', text: m.content })
     for (const img of m.images) {
@@ -40,16 +40,33 @@ function toOpenAIMessages(messages: ApiMsg[]) {
   })
 }
 
+// Convert to text-only format (non-vision providers: groq, mistral, sarvam)
+// Images are stripped; a note is appended to the text instead
+function toTextOnlyMessages(messages: ApiMsg[]) {
+  return messages.map(m => {
+    let content = m.content || ''
+    if (m.images?.length) {
+      const note = `[${m.images.length} image${m.images.length > 1 ? 's' : ''} attached]`
+      content = content ? `${content}\n${note}` : note
+    }
+    return { role: m.role, content: content || ' ' }
+  })
+}
+
 // ── OpenAI-compatible stream → normalised ──────────────────────────────────────
-// Covers: OpenAI, Groq, Mistral, OpenRouter, Sarvam
 async function proxyOpenAICompatible(
   endpoint: string,
   apiKey: string,
   model: string,
   messages: ApiMsg[],
   extraHeaders: Record<string, string> = {},
-  maxTokens = 4096
+  maxTokens = 4096,
+  supportsVision = false
 ): Promise<ReadableStream<Uint8Array>> {
+  const formatted = supportsVision
+    ? toOpenAIVisionMessages(messages)
+    : toTextOnlyMessages(messages)
+
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -57,7 +74,7 @@ async function proxyOpenAICompatible(
       'Content-Type': 'application/json',
       ...extraHeaders,
     },
-    body: JSON.stringify({ model, messages: toOpenAIMessages(messages), stream: true, max_tokens: maxTokens }),
+    body: JSON.stringify({ model, messages: formatted, stream: true, max_tokens: maxTokens }),
   })
 
   if (!res.ok) {
@@ -182,11 +199,18 @@ async function proxyGoogle(
     .filter(m => m.role !== 'system')
     .map(m => {
       const parts: unknown[] = []
-      if (m.content) parts.push({ text: m.content })
+      if (m.content?.trim()) parts.push({ text: m.content })
       for (const img of m.images ?? []) {
         parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } })
       }
+      // Google rejects empty parts — ensure at least one part
+      if (parts.length === 0) parts.push({ text: ' ' })
       return { role: m.role === 'assistant' ? 'model' : 'user', parts }
+    })
+    .filter((_, i, arr) => {
+      // Google doesn't allow consecutive same-role turns — deduplicate
+      if (i === 0) return true
+      return arr[i].role !== arr[i - 1].role
     })
 
   const res = await fetch(endpoint, {
@@ -257,9 +281,10 @@ export async function POST(req: NextRequest) {
 
     switch (provider) {
       case 'openai':
+        // OpenAI supports vision (image_url array content)
         stream = await proxyOpenAICompatible(
           'https://api.openai.com/v1/chat/completions',
-          apiKey, apiModel, messages, {}, maxTokens
+          apiKey, apiModel, messages, {}, maxTokens, true
         )
         break
       case 'anthropic':
@@ -269,29 +294,33 @@ export async function POST(req: NextRequest) {
         stream = await proxyGoogle(apiKey, apiModel, messages)
         break
       case 'groq':
+        // Groq requires content as a plain string — strip images
         stream = await proxyOpenAICompatible(
           'https://api.groq.com/openai/v1/chat/completions',
-          apiKey, apiModel, messages, {}, maxTokens
+          apiKey, apiModel, messages, {}, maxTokens, false
         )
         break
       case 'mistral':
+        // Mistral requires content as a plain string — strip images
         stream = await proxyOpenAICompatible(
           'https://api.mistral.ai/v1/chat/completions',
-          apiKey, apiModel, messages, {}, maxTokens
+          apiKey, apiModel, messages, {}, maxTokens, false
         )
         break
       case 'openrouter':
+        // OpenRouter passes vision through to underlying models
         stream = await proxyOpenAICompatible(
           'https://openrouter.ai/api/v1/chat/completions',
           apiKey, apiModel, messages,
           { 'HTTP-Referer': 'https://kairo.app', 'X-Title': 'Kairo' },
-          maxTokens
+          maxTokens, true
         )
         break
       case 'sarvam':
+        // Sarvam requires content as a plain string — strip images
         stream = await proxyOpenAICompatible(
           'https://api.sarvam.ai/v1/chat/completions',
-          apiKey, apiModel, messages, {}, maxTokens
+          apiKey, apiModel, messages, {}, maxTokens, false
         )
         break
       default:
