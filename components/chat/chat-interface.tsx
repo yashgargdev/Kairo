@@ -196,7 +196,8 @@ export function ChatInterface() {
     modelId: string,
     tools: string[] = [],
     hint?: string,
-    images?: { mimeType: string; data: string; name: string }[]
+    images?: { mimeType: string; data: string; name: string }[],
+    files?: { name: string; content: string }[]
   ) => {
     if (isResponding) return
 
@@ -208,12 +209,14 @@ export function ChatInterface() {
     const priorMessages = (store.currentConversation?.messages ?? [])
       .filter(m => !m.noKey && !m.errorMessage && (m.content.trim() !== '' || m.images?.length))
 
-    // Store clean text + images in chat store (shown in user bubble)
+    // Store clean text + images + file pills in chat store (shown in user bubble)
+    // File content is NOT stored here — it gets injected into the API message only
     store.addMessage(convId, {
       role: 'user',
       content: text,
       timestamp: new Date(),
       ...(images?.length ? { images } : {}),
+      ...(files?.length ? { fileAttachments: files.map(f => ({ name: f.name })) } : {}),
     })
 
     // ── Image generation path ──────────────────────────────────────────────────
@@ -240,13 +243,17 @@ export function ChatInterface() {
 
     setIsResponding(true)
 
-    // Build history from prior messages + append current message with hint
+    // Build history from prior messages + append current message with hint + file content
     const history: ChatMessage[] = priorMessages.map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
       ...(m.images?.length ? { images: m.images } : {}),
     }))
-    const apiText = hint ? `${text}\n\n[${hint}]` : text
+    // Inject extracted file content into the API message (hidden from the display bubble)
+    const fileContext = files?.map(f => `\`\`\`\n// File: ${f.name}\n${f.content}\n\`\`\``).join('\n\n')
+    let apiContent = text
+    if (fileContext) apiContent = apiContent ? `${apiContent}\n\n${fileContext}` : fileContext
+    const apiText = hint ? `${apiContent}\n\n[${hint}]` : apiContent
     history.push({ role: 'user', content: apiText, ...(images?.length ? { images } : {}) })
 
     // Add streaming assistant placeholder

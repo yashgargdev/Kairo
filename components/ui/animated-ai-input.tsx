@@ -163,7 +163,14 @@ interface Attachment {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 interface AIInputProps {
-  onSend: (message: string, model: string, tools: string[], hint?: string, images?: { mimeType: string; data: string; name: string }[]) => void;
+  onSend: (
+    message: string,
+    model: string,
+    tools: string[],
+    hint?: string,
+    images?: { mimeType: string; data: string; name: string }[],
+    files?: { name: string; content: string }[]   // text file attachments (name for display, content for API)
+  ) => void;
   disabled?: boolean;
   className?: string;
   defaultModelId?: string;
@@ -298,13 +305,11 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
       .filter(Boolean)
       .join(' ')
 
-    // Append text file contents
-    const fileContext = textAttachments
-      .map(a => `\`\`\`\n// File: ${a.name}\n${a.content}\n\`\`\``)
-      .join('\n\n')
+    // Display message = only what the user typed (file content hidden)
+    const message = hasText ? value.trim() : ''
 
-    let message = hasText ? value.trim() : ''
-    if (fileContext) message = message ? `${message}\n\n${fileContext}` : fileContext
+    // Text file attachments — name shown as pill, content sent to API by chat-interface
+    const files = textAttachments.map(a => ({ name: a.name, content: a.content }))
 
     // Extract images as base64 (strip the data:...;base64, prefix)
     const images = imageAttachments.map(a => {
@@ -316,7 +321,7 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
       }
     })
 
-    onSend(message, selectedModel.id, activeTools, hintStr, images.length ? images : undefined)
+    onSend(message, selectedModel.id, activeTools, hintStr, images.length ? images : undefined, files.length ? files : undefined)
     setValue("")
     setActiveTools([])
     setAttachments([])

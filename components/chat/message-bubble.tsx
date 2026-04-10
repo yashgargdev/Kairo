@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Copy, Check, RotateCcw, Zap } from 'lucide-react'
+import { Copy, Check, RotateCcw, Zap, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Message } from '@/types/chat'
 import { ThinkingBlock } from './thinking-block'
@@ -48,6 +48,20 @@ export function MessageBubble({ message, showThinking = true, fontSize = 'sm', o
                   alt={img.name}
                   className="max-w-[200px] max-h-[200px] rounded-xl border border-white/[0.08] object-cover"
                 />
+              ))}
+            </div>
+          )}
+          {/* Attached text/doc files — show pill only, content is hidden */}
+          {message.fileAttachments && message.fileAttachments.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 justify-end mb-2">
+              {message.fileAttachments.map((f, i) => (
+                <span
+                  key={i}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/[0.1] bg-white/[0.05] text-zinc-300"
+                >
+                  <FileText className="w-3 h-3 text-zinc-400 shrink-0" />
+                  <span className="truncate max-w-[180px]">{f.name}</span>
+                </span>
               ))}
             </div>
           )}

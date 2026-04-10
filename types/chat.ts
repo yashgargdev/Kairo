@@ -44,11 +44,16 @@ export interface MessageImage {
   name: string
 }
 
+export interface FileAttachment {
+  name: string
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   images?: MessageImage[]
+  fileAttachments?: FileAttachment[]  // text/doc files shown as pills, content not displayed
   thinking?: ThinkingStep[]
   toolResults?: ToolResult[]
   timestamp: Date
