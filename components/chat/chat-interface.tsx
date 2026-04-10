@@ -235,15 +235,18 @@ export function ChatInterface() {
 
     setIsResponding(true)
 
-    // Build message history for context — skip error/noKey/empty placeholder messages
-    const history: ChatMessage[] = (store.currentConversation?.messages ?? [])
+    // Build message history — exclude the message we just added (last in store)
+    // so we can push it with the hint without duplicating it
+    const allStored = (store.currentConversation?.messages ?? [])
       .filter(m => !m.noKey && !m.errorMessage && (m.content.trim() !== '' || m.images?.length))
+    const history: ChatMessage[] = allStored
+      .slice(0, -1)   // drop the last entry (the user msg we just stored)
       .map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
         ...(m.images?.length ? { images: m.images } : {}),
       }))
-    // Append hint to the API turn only — never stored in the chat store
+    // Push current message with hint appended (hint never stored in UI)
     const apiText = hint ? `${text}\n\n[${hint}]` : text
     history.push({ role: 'user', content: apiText, ...(images?.length ? { images } : {}) })
 
