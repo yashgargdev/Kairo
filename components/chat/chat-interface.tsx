@@ -191,14 +191,25 @@ export function ChatInterface() {
     })
   }, [store, keys, settings, isResponding])
 
-  const handleSend = useCallback(async (text: string, modelId: string, tools: string[] = [], hint?: string) => {
+  const handleSend = useCallback(async (
+    text: string,
+    modelId: string,
+    tools: string[] = [],
+    hint?: string,
+    images?: { mimeType: string; data: string; name: string }[]
+  ) => {
     if (isResponding) return
 
     let convId = store.currentId
     if (!convId) convId = store.createConversation(modelId)
 
-    // Store clean text (no hint) so the user bubble stays clean
-    store.addMessage(convId, { role: 'user', content: text, timestamp: new Date() })
+    // Store clean text + images in chat store (shown in user bubble)
+    store.addMessage(convId, {
+      role: 'user',
+      content: text,
+      timestamp: new Date(),
+      ...(images?.length ? { images } : {}),
+    })
 
     // ── Image generation path ──────────────────────────────────────────────────
     if (tools.includes('image')) {
@@ -226,14 +237,15 @@ export function ChatInterface() {
 
     // Build message history for context — skip error/noKey/empty placeholder messages
     const history: ChatMessage[] = (store.currentConversation?.messages ?? [])
-      .filter(m => !m.noKey && !m.errorMessage && m.content.trim() !== '')
+      .filter(m => !m.noKey && !m.errorMessage && (m.content.trim() !== '' || m.images?.length))
       .map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
+        ...(m.images?.length ? { images: m.images } : {}),
       }))
     // Append hint to the API turn only — never stored in the chat store
     const apiText = hint ? `${text}\n\n[${hint}]` : text
-    history.push({ role: 'user', content: apiText })
+    history.push({ role: 'user', content: apiText, ...(images?.length ? { images } : {}) })
 
     // Add streaming assistant placeholder
     const aiMsgId = store.addMessage(convId, {

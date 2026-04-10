@@ -38,12 +38,27 @@ export function MessageBubble({ message, showThinking = true, fontSize = 'sm', o
         className="flex justify-end mb-4"
       >
         <div className="max-w-[75%] group">
-          <div className={cn(
-            "bg-white/[0.07] border border-white/[0.08] rounded-2xl rounded-br-md px-4 py-3 text-zinc-200 leading-relaxed whitespace-pre-wrap",
-            fontSize === 'sm' ? 'text-sm' : fontSize === 'lg' ? 'text-lg' : 'text-base'
-          )}>
-            {message.content}
-          </div>
+          {/* Attached images */}
+          {message.images && message.images.length > 0 && (
+            <div className="flex flex-wrap gap-2 justify-end mb-2">
+              {message.images.map((img, i) => (
+                <img
+                  key={i}
+                  src={`data:${img.mimeType};base64,${img.data}`}
+                  alt={img.name}
+                  className="max-w-[200px] max-h-[200px] rounded-xl border border-white/[0.08] object-cover"
+                />
+              ))}
+            </div>
+          )}
+          {message.content && (
+            <div className={cn(
+              "bg-white/[0.07] border border-white/[0.08] rounded-2xl rounded-br-md px-4 py-3 text-zinc-200 leading-relaxed whitespace-pre-wrap",
+              fontSize === 'sm' ? 'text-sm' : fontSize === 'lg' ? 'text-lg' : 'text-base'
+            )}>
+              {message.content}
+            </div>
+          )}
           <div className="flex justify-end mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <span className="text-[10px] font-mono text-zinc-700">
               {formatTime(message.timestamp)}

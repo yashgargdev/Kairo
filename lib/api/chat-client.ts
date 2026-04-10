@@ -1,6 +1,12 @@
+export interface ChatMessageImage {
+  mimeType: string
+  data: string  // base64 without prefix
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
+  images?: ChatMessageImage[]
 }
 
 export interface StreamCallbacks {

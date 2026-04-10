@@ -38,10 +38,17 @@ export interface ToolResult {
   language?: string
 }
 
+export interface MessageImage {
+  mimeType: string   // e.g. 'image/jpeg'
+  data: string       // base64 (no data:... prefix)
+  name: string
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  images?: MessageImage[]
   thinking?: ThinkingStep[]
   toolResults?: ToolResult[]
   timestamp: Date

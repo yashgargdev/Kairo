@@ -23,13 +23,29 @@ function errorStream(message: string) {
   return readable
 }
 
+type MsgImage = { mimeType: string; data: string }
+type ApiMsg = { role: string; content: string; images?: MsgImage[] }
+
+// Convert messages to OpenAI multimodal format
+function toOpenAIMessages(messages: ApiMsg[]) {
+  return messages.map(m => {
+    if (!m.images?.length) return { role: m.role, content: m.content }
+    const content: unknown[] = []
+    if (m.content) content.push({ type: 'text', text: m.content })
+    for (const img of m.images) {
+      content.push({ type: 'image_url', image_url: { url: `data:${img.mimeType};base64,${img.data}` } })
+    }
+    return { role: m.role, content }
+  })
+}
+
 // ── OpenAI-compatible stream → normalised ──────────────────────────────────────
 // Covers: OpenAI, Groq, Mistral, OpenRouter, Sarvam
 async function proxyOpenAICompatible(
   endpoint: string,
   apiKey: string,
   model: string,
-  messages: { role: string; content: string }[],
+  messages: ApiMsg[],
   extraHeaders: Record<string, string> = {},
   maxTokens = 4096
 ): Promise<ReadableStream<Uint8Array>> {
@@ -40,7 +56,7 @@ async function proxyOpenAICompatible(
       'Content-Type': 'application/json',
       ...extraHeaders,
     },
-    body: JSON.stringify({ model, messages, stream: true, max_tokens: maxTokens }),
+    body: JSON.stringify({ model, messages: toOpenAIMessages(messages), stream: true, max_tokens: maxTokens }),
   })
 
   if (!res.ok) {
@@ -85,11 +101,19 @@ async function proxyOpenAICompatible(
 async function proxyAnthropic(
   apiKey: string,
   model: string,
-  messages: { role: string; content: string }[],
+  messages: ApiMsg[],
   maxTokens = 8096
 ): Promise<ReadableStream<Uint8Array>> {
   const system = messages.find(m => m.role === 'system')?.content
-  const chat = messages.filter(m => m.role !== 'system')
+  const chat = messages.filter(m => m.role !== 'system').map(m => {
+    if (!m.images?.length) return { role: m.role, content: m.content }
+    const content: unknown[] = []
+    for (const img of m.images) {
+      content.push({ type: 'image', source: { type: 'base64', media_type: img.mimeType, data: img.data } })
+    }
+    if (m.content) content.push({ type: 'text', text: m.content })
+    return { role: m.role, content }
+  })
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -149,16 +173,20 @@ async function proxyAnthropic(
 async function proxyGoogle(
   apiKey: string,
   model: string,
-  messages: { role: string; content: string }[]
+  messages: ApiMsg[]
 ): Promise<ReadableStream<Uint8Array>> {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`
 
   const contents = messages
     .filter(m => m.role !== 'system')
-    .map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }))
+    .map(m => {
+      const parts: unknown[] = []
+      if (m.content) parts.push({ text: m.content })
+      for (const img of m.images ?? []) {
+        parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } })
+      }
+      return { role: m.role === 'assistant' ? 'model' : 'user', parts }
+    })
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -207,7 +235,7 @@ async function proxyGoogle(
 export async function POST(req: NextRequest) {
   try {
     const { messages, model, apiKey, provider, maxTokens } = await req.json() as {
-      messages: { role: string; content: string }[]
+      messages: ApiMsg[]
       model: string
       apiKey: string
       provider: string

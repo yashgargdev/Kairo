@@ -163,7 +163,7 @@ interface Attachment {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 interface AIInputProps {
-  onSend: (message: string, model: string, tools: string[], hint?: string) => void;
+  onSend: (message: string, model: string, tools: string[], hint?: string, images?: { mimeType: string; data: string; name: string }[]) => void;
   disabled?: boolean;
   className?: string;
   defaultModelId?: string;
@@ -281,8 +281,9 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
 
   const handleSend = useCallback(() => {
     const hasText = value.trim()
-    const validAttachments = attachments.filter(a => a.status === 'text' && a.content)
-    if ((!hasText && !validAttachments.length) || disabled) return
+    const textAttachments = attachments.filter(a => a.status === 'text' && a.content)
+    const imageAttachments = attachments.filter(a => a.status === 'image' && a.content)
+    if ((!hasText && !textAttachments.length && !imageAttachments.length) || disabled) return
 
     // Collect tool hints (sent to API only, NOT stored in user message)
     const hintStr = activeTools
@@ -290,17 +291,25 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
       .filter(Boolean)
       .join(' ')
 
-    // Append file contents (text files only — images are not yet sent to API)
-    const fileContext = validAttachments
-      .filter(a => a.status === 'text')
+    // Append text file contents
+    const fileContext = textAttachments
       .map(a => `\`\`\`\n// File: ${a.name}\n${a.content}\n\`\`\``)
       .join('\n\n')
 
     let message = hasText ? value.trim() : ''
     if (fileContext) message = message ? `${message}\n\n${fileContext}` : fileContext
-    // hints are NOT appended to message — passed separately so the UI bubble stays clean
 
-    onSend(message, selectedModel.id, activeTools, hintStr)
+    // Extract images as base64 (strip the data:...;base64, prefix)
+    const images = imageAttachments.map(a => {
+      const match = a.content.match(/^data:([^;]+);base64,(.+)$/)
+      return {
+        name: a.name,
+        mimeType: match?.[1] ?? 'image/jpeg',
+        data: match?.[2] ?? a.content,
+      }
+    })
+
+    onSend(message, selectedModel.id, activeTools, hintStr, images.length ? images : undefined)
     setValue("")
     setActiveTools([])
     setAttachments([])
