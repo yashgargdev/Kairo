@@ -561,7 +561,7 @@ export function AIInput({ onSend, disabled, className, defaultModelId }: AIInput
         </div>
       </div>
       <p className="text-center text-[10px] text-zinc-700 mt-2 font-mono">
-        Shift+Enter for new line · Your keys never leave your browser
+        Shift+Enter for new line · Keys stored in httpOnly cookies
       </p>
     </div>
   );

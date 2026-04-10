@@ -16,10 +16,12 @@ export async function POST(req: NextRequest) {
 
     // ── PDF ──────────────────────────────────────────────────────────────────
     if (name.endsWith('.pdf')) {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
-      const data = await pdfParse(buffer)
-      text = data.text
+      // pdf-parse v2 uses a class API — pass buffer as a data URL
+      const { PDFParse } = await import('pdf-parse')
+      const dataUrl = `data:application/pdf;base64,${buffer.toString('base64')}`
+      const parser = new PDFParse({ url: dataUrl })
+      const result = await parser.getText()
+      text = result.text
 
     // ── Word ─────────────────────────────────────────────────────────────────
     } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
