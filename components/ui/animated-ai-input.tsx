@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Bot, Check, ChevronDown, ImageIcon, Paperclip, StickyNote, GitBranch, X, FileText, FileCode, File, Loader2, AlertCircle } from "lucide-react";
+import { ArrowUp, Bot, Check, ChevronDown, ImageIcon, Paperclip, StickyNote, GitBranch, Share2, X, FileText, FileCode, File, Loader2, AlertCircle } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -118,9 +118,14 @@ export const TOOLS = [
     hint: "", // routed to /api/image — no text hint needed
   },
   {
+    id: "flowchart", label: "Flowchart", icon: Share2,
+    color: "text-green-400", bg: "bg-green-500/10 border-green-500/20 hover:bg-green-500/20",
+    hint: "The user wants a flowchart. Respond with a Mermaid.js flowchart inside a fenced ```mermaid code block. Always start with 'flowchart TD' (top-down) or 'flowchart LR' (left-right, better for wide processes). Use [Rectangle] for steps/processes, {Diamond} for decisions/conditions, ([Stadium]) for start/end, and -->|label| for labeled arrows. Decision branches must always be labeled (Yes/No, True/False, etc.). Keep node text concise (3–5 words). After the code block, write 1–2 sentences explaining the flow.",
+  },
+  {
     id: "diagram", label: "Diagram", icon: GitBranch,
     color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20",
-    hint: "The user wants a visual diagram. Respond with a Mermaid.js diagram inside a fenced ```mermaid code block. Pick the most fitting type: flowchart TD for processes, sequenceDiagram for interactions, classDiagram for structures, erDiagram for databases, gantt for timelines. Keep node labels concise. After the block, add 1–2 sentences explaining the diagram.",
+    hint: "The user wants a technical diagram. Respond with a Mermaid.js diagram inside a fenced ```mermaid code block. Pick the best type for the content: sequenceDiagram for API/service interactions, classDiagram for OOP structures, erDiagram for databases, gantt for timelines, gitGraph for git branching, mindmap for concept maps, stateDiagram-v2 for state machines. Keep labels concise. After the block, add 1–2 sentences explaining the diagram.",
   },
   {
     id: "notes", label: "Notes", icon: StickyNote,
